@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Botanics
 
-## Getting Started
+Storefront for Botanics, a small-batch hemp-derived CBD brand (tinctures,
+gummies, topicals and teas). Phase 1 ships the design system and the full
+storefront UI on top of in-repo mock data; no database, payments or accounts yet.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16 (App Router, Turbopack) with React 19 and the React Compiler
+- TypeScript in strict mode
+- Tailwind CSS v4 with project tokens in `src/app/globals.css`
+- Zod for form validation
+- Vitest + Testing Library (jsdom) for unit tests
+- ESLint (`eslint-config-next`) and Prettier (with the Tailwind plugin)
+- pnpm, Node 24+
+
+## Scripts
+
+| Command             | What it does                                      |
+| ------------------- | ------------------------------------------------- |
+| `pnpm dev`          | Start the dev server (use `-p 3001` if 3000 busy) |
+| `pnpm build`        | Production build                                  |
+| `pnpm start`        | Serve the production build                        |
+| `pnpm typecheck`    | Generate route types and run `tsc --noEmit`       |
+| `pnpm lint`         | ESLint                                            |
+| `pnpm test`         | Run the unit tests once                           |
+| `pnpm test:watch`   | Run the unit tests in watch mode                  |
+| `pnpm format`       | Prettier, write mode                              |
+| `pnpm format:check` | Prettier, check mode                              |
+
+## Project structure
+
+```
+src/
+  app/            App Router: root layout, (storefront) route group, API routes
+  components/
+    ui/           Primitives (Button, Input, Dialog, Drawer, Accordion, Toast, ...)
+    layout/       Header, footer, search, menus, newsletter, contact form
+    catalog/      Hero, product cards, grid, filters, gallery, purchase panel
+    cart/         Cart drawer, cart page, line items, summary
+    marketing/    Home page sections
+  hooks/          Cart, wishlist, cart pricing, debounce
+  lib/            Pure helpers: money, cart maths, shop query parsing, validation
+  services/       Data access (product, category, content); the only importers of mocks
+  mocks/          Phase 1 seed catalog and content
+  types/          Shared TypeScript types
+  test/           Test fixtures
+docs/superpowers/specs/  Design specs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Pages are Server Components by default. Client Components are limited to the
+interactive islands listed in the Phase 1 spec.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Phase 1: mock data
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All catalog and content data comes from `src/mocks` through the services in
+`src/services`. See
+`docs/superpowers/specs/2026-09-21-phase1-storefront-ui-design.md` for the full
+spec, component contracts and verification steps.
 
-## Learn More
+The `/checkout` and `/account` routes are placeholders until later phases. The
+cart is persisted in `localStorage` and priced through `/api/products`.
 
-To learn more about Next.js, take a look at the following resources:
+## Verification
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm format:check
+```

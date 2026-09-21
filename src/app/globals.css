@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-*: initial;
+  --color-canvas: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-ink: #12163a;
+  --color-ink-muted: #4b5070;
+  --color-brand: #0b1150;
+  --color-brand-hover: #1c2470;
+  --color-brand-soft: #e8eaf6;
+  --color-on-brand: #ffffff;
+  --color-on-brand-muted: #c3c7e6;
+  --color-accent: #f26a1b;
+  --color-accent-hover: #ff8a3d;
+  --color-accent-strong: #c2410c;
+  --color-on-accent: #0b1150;
+  --color-line: #dde0ea;
+  --color-line-strong: #7c819f;
+  --color-danger: #b3261e;
+  --color-danger-on-dark: #fca5a5;
+  --color-success: #2f5e3f;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --text-*: initial;
+  --text-sm: 0.875rem; /* 14/20 */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem; /* 16/24 */
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem; /* 18/28 */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem; /* 20/28 */
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem; /* 24/32 */
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 2rem; /* 32/40 */
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl: 2.75rem; /* 44/48 */
+  --text-4xl--line-height: 3rem;
+  --text-5xl: 4rem; /* 64/68 */
+  --text-5xl--line-height: 4.25rem;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --radius-*: initial;
+  --radius-btn: 10px;
+  --radius-input: 10px;
+  --radius-card: 16px;
+  --radius-full: 9999px;
+
+  --shadow-*: initial;
+  --shadow-elevation: 0 16px 40px -12px rgb(11 17 80 / 0.22);
+
+  --tracking-display: -0.025em;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-reveal: reveal 360ms var(--ease-soft) both;
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-bricolage), var(--font-figtree), ui-sans-serif, sans-serif;
+}
+
+/* Focus-ring scopes: the ring colour must contrast with the region's surface. */
+@utility focus-scope-dark {
+  --focus-ring: var(--color-accent);
+}
+
+@utility focus-scope-accent {
+  --focus-ring: var(--color-brand);
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-sans text-ink;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-accent-strong));
+    outline-offset: 2px;
+  }
+  .font-display {
+    font-optical-sizing: auto;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    text-wrap: balance;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
