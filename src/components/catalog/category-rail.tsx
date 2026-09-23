@@ -21,14 +21,14 @@ export function CategoryRail({ categories, className }: CategoryRailProps) {
           Shop by category
         </h2>
         {/* `p-1` keeps focus rings visible: overflow-x-auto also clips vertically. */}
-        <ul className="-mx-4 flex [scrollbar-width:none] gap-4 overflow-x-auto overscroll-x-contain p-1 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] md:overflow-visible md:px-1">
+        <ul className="-mx-4 flex [scrollbar-width:none] gap-4 overflow-x-auto overscroll-x-contain p-1 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] lg:overflow-visible lg:px-1">
           {categories.map((category) => (
             <li key={category.id} className="shrink-0">
               <Link
                 href={`/shop/${category.slug}`}
-                className="group flex w-24 flex-col items-center gap-2 rounded-btn md:w-auto"
+                className="group flex w-24 flex-col items-center gap-2 rounded-btn lg:w-auto"
               >
-                <span className="relative flex size-24 items-center justify-center overflow-hidden rounded-full border-2 border-line bg-brand-soft transition-colors group-hover:border-accent lg:size-28">
+                <span className="relative flex size-24 items-center justify-center overflow-hidden rounded-full border-2 border-line bg-brand-soft transition-colors group-hover:border-accent lg:size-24 xl:size-28">
                   {category.imageUrl ? (
                     <Image
                       src={category.imageUrl}

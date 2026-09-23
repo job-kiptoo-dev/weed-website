@@ -5,10 +5,72 @@ import { __resetCartStore } from "@/hooks/use-cart";
 import { SHOP_PAGE_SIZE, type ShopQuery } from "@/lib/shop-query";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
+import { makeProduct } from "@/test/catalog-fixtures";
+import type {
+  CategoryWithCount,
+  ListProductsParams,
+  Paginated,
+  ProductSummary,
+} from "@/types/catalog";
 import { ShopListing } from "./shop-listing";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+}));
+
+/** 25 fixture products: two pages at the shop page size of 20. */
+const PRODUCTS: ProductSummary[] = Array.from({ length: 25 }, (_, i) =>
+  makeProduct({
+    id: `prod_test-${i + 1}`,
+    slug: `test-product-${i + 1}`,
+    name: `Test product ${i + 1}`,
+    sku: `TEST-${i + 1}`,
+    priceCents: 1000 + i * 100,
+  }),
+);
+
+const CATEGORIES: CategoryWithCount[] = [
+  {
+    id: "cat_tinctures",
+    name: "Tinctures",
+    slug: "tinctures",
+    description: "Oils and tinctures.",
+    imageUrl: "/images/categories/tinctures.jpg",
+    sortOrder: 1,
+    createdAt: "2025-01-01T00:00:00.000Z",
+    updatedAt: "2025-01-01T00:00:00.000Z",
+    productCount: PRODUCTS.length,
+  },
+];
+
+function paginate({
+  page = 1,
+  pageSize = 12,
+}: ListProductsParams = {}): Paginated<ProductSummary> {
+  const total = PRODUCTS.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const current = Math.min(Math.max(page, 1), Math.max(totalPages, 1));
+  const start = (current - 1) * pageSize;
+  return {
+    items: PRODUCTS.slice(start, start + pageSize),
+    page: current,
+    pageSize,
+    total,
+    totalPages,
+  };
+}
+
+vi.mock("@/services/product.service", () => ({
+  productService: {
+    listProducts: vi.fn(async (params?: ListProductsParams) =>
+      paginate(params),
+    ),
+    getPriceRangeCents: vi.fn(async () => ({ minCents: 1000, maxCents: 3400 })),
+  },
+}));
+
+vi.mock("@/services/category.service", () => ({
+  categoryService: { listCategories: vi.fn(async () => CATEGORIES) },
 }));
 
 /** `ShopListing` is an async Server Component: resolve it, then render. */

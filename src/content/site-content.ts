@@ -1,5 +1,6 @@
 /**
- * Phase 1 mock site content. Only `src/services/*` may import this module.
+ * Site copy, kept as typed config in code (developer-edited and reviewed).
+ * Pages read it through `contentService`, never directly.
  * All copy is sentence case, plain, and makes no health or medical claims.
  */
 import { siteConfig, type FeatureFlags } from "@/lib/site-config";
@@ -10,7 +11,7 @@ import type {
   StaticPageSection,
 } from "@/types/content";
 
-const { name } = siteConfig;
+const { name, contact } = siteConfig;
 
 const baseFaqItems: FaqItem[] = [
   {
@@ -35,7 +36,7 @@ const baseFaqItems: FaqItem[] = [
     id: "faq-strength",
     question: "How do I read the strength on the label?",
     answer:
-      "Products that come in pieces, like gummies, chocolate squares, honey sticks, tea sachets, cocoa packets and softgels, list the amount of CBD in each piece. Everything else, like tinctures, balms, lotions, bath soaks and matcha, lists the total amount in the package. Every label also lists the amount in each serving. For example, a 1000 mg, 30 mL tincture has about 33 mg in each 1 mL serving.",
+      "Products that come in pieces, like gummies, chocolate squares, honey straws, tea sachets, cocoa packets and softgels, list the amount of CBD in each piece. Everything else, like tinctures, balms, lotions, bath soaks and matcha, lists the total amount in the package. Every label also lists the amount in each serving. For example, a 1000 mg, 30 mL tincture has about 33 mg in each 1 mL serving.",
   },
   {
     id: "faq-serving",
@@ -64,7 +65,7 @@ const baseFaqItems: FaqItem[] = [
 
 const smokableHempFaq: FaqItem = {
   id: "faq-smokable-hemp",
-  question: "Can you ship hemp pre-rolls to my state?",
+  question: "Can you ship hemp flower and pre-rolls to my state?",
   answer:
     "Some states restrict or ban smokable hemp. We confirm your address before these products ship and refund any order we can't send.",
 };
@@ -199,7 +200,7 @@ const baseStaticPages: StaticPage[] = [
       {
         heading: "Contact",
         paragraphs: [
-          "To ask about or delete the information we hold about you, email hello@havenbotanics.example.",
+          `To ask about or delete the information we hold about you, email ${contact.email}.`,
         ],
       },
     ],
@@ -276,7 +277,7 @@ function insertAfterHeading(
   ];
 }
 
-export interface MockContent {
+export interface SiteContent {
   faqItems: FaqItem[];
   homeContent: HomeContent;
   staticPages: StaticPage[];
@@ -286,7 +287,7 @@ export interface MockContent {
  * Builds site copy for a set of feature flags. Pure: tests pass flags in
  * directly instead of changing `siteConfig`.
  */
-export function buildContent(features: FeatureFlags): MockContent {
+export function buildContent(features: FeatureFlags): SiteContent {
   const smokable = features.smokableHemp;
   return {
     faqItems: smokable
@@ -295,7 +296,7 @@ export function buildContent(features: FeatureFlags): MockContent {
     homeContent: {
       ...baseHomeContent,
       categoryRowSlugs: smokable
-        ? ["hemp-pre-rolls", "tinctures", "gummies-edibles"]
+        ? ["hemp-flower", "tinctures", "gummies-edibles"]
         : ["tinctures", "gummies-edibles", "topicals"],
     },
     staticPages: smokable
@@ -315,6 +316,7 @@ export function buildContent(features: FeatureFlags): MockContent {
   };
 }
 
-export const { faqItems, homeContent, staticPages }: MockContent = buildContent(
-  siteConfig.features,
-);
+/** Site copy for the current `siteConfig.features`. */
+export function getSiteContent(): SiteContent {
+  return buildContent(siteConfig.features);
+}

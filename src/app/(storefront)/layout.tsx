@@ -9,6 +9,11 @@ import { Toaster } from "@/components/ui/toast";
 import { categoryService } from "@/services/category.service";
 import type { CategoryRef } from "@/types/catalog";
 
+// ISR for the statically prerendered storefront routes: catalog changes
+// (reseeds, later admin edits) show within an hour. Phase 3 replaces this
+// with Cache Components (`use cache` + tags), where `revalidate` errors.
+export const revalidate = 3600;
+
 export default async function StorefrontLayout({
   children,
 }: {

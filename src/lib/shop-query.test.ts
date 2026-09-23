@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildShopHref, parseShopQuery } from "./shop-query";
+import { buildShopHref, MAX_QUERY_LENGTH, parseShopQuery } from "./shop-query";
 
 describe("parseShopQuery", () => {
   it("returns an empty query for no params", () => {
@@ -42,6 +42,13 @@ describe("parseShopQuery", () => {
 
   it("uses the first value when a param repeats", () => {
     expect(parseShopQuery({ q: ["mint", "tea"] })).toEqual({ q: "mint" });
+  });
+
+  it("caps the search query at MAX_QUERY_LENGTH characters", () => {
+    const long = `  ${"a".repeat(150)}  `;
+    const { q } = parseShopQuery({ q: long });
+    expect(MAX_QUERY_LENGTH).toBe(100);
+    expect(q).toBe("a".repeat(MAX_QUERY_LENGTH));
   });
 });
 

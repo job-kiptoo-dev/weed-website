@@ -61,7 +61,8 @@ export interface Product {
 export interface Review {
   id: string;
   productId: string;
-  userId: string;
+  /** Null for reviews with no account behind them (historical seed reviews). */
+  userId: string | null;
   authorName: string;
   rating: 1 | 2 | 3 | 4 | 5;
   title: string;
@@ -96,4 +97,27 @@ export interface SearchSuggestion {
   href: string;
   imageUrl: string | null;
   priceCents: number | null;
+}
+
+/* Service query and result shapes (shared with URL parsing and UI). */
+export type ProductSort =
+  "featured" | "newest" | "price-asc" | "price-desc" | "rating";
+
+export interface ListProductsParams {
+  category?: string;
+  query?: string;
+  sort?: ProductSort;
+  minPriceCents?: number;
+  maxPriceCents?: number;
+  inStock?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }

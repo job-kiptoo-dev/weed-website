@@ -7,7 +7,7 @@ function makeReview(overrides: Partial<Review> = {}): Review {
   return {
     id: "rev_1",
     productId: "prod_test",
-    userId: "user_1",
+    userId: null,
     authorName: "Maya R.",
     rating: 5,
     title: "Mild taste",

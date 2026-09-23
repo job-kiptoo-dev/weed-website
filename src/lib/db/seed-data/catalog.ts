@@ -1,6 +1,9 @@
 /**
- * Phase 1 mock catalog. Deleted in Phase 2 when the Drizzle-backed services
- * land. Only `src/services/*` may import this module.
+ * Seed catalog: every category, product, image, variant and review, with
+ * stable ids (`cat_<slug>`, `prod_<slug>`, `var_<slug>-<key>`) so existing
+ * localStorage carts and wishlists keep resolving. Read by the database seed
+ * (`src/lib/db/seed/insert.ts`); nothing at runtime imports it once the
+ * services query Postgres.
  */
 import type {
   Category,
@@ -11,7 +14,12 @@ import type {
   ProductVariant,
   Review,
 } from "@/types/catalog";
-import { siteConfig, type FeatureFlags } from "@/lib/site-config";
+import {
+  HEMP_FLOWER_CATEGORY,
+  HEMP_PRE_ROLLS_CATEGORY,
+} from "@/lib/catalog-visibility";
+import { brandTinctureSeeds, glasswareSeeds } from "./catalog-brands";
+import { hempFlowerSeeds } from "./catalog-flower";
 
 const IMAGE_COUNT = 3;
 
@@ -19,15 +27,16 @@ function categoryImage(slug: string): string {
   return `/images/categories/${slug}.jpg`;
 }
 
-interface PoolPhoto {
+export interface PoolPhoto {
   file: string;
   alt: string;
 }
 
 /**
- * Self-hosted product photos, keyed by category slug. Each product's gallery
- * starts at its seed's `photo` index and wraps around the pool. Sources and
- * licences are listed in `docs/image-credits.md`.
+ * Self-hosted product photos, keyed by category slug. A product with a
+ * `photo` index gets a gallery that starts there and wraps around the pool;
+ * products with their own `images` skip the pools. Sources and licences are
+ * listed in `docs/image-credits.md`.
  */
 const photoPools: Record<string, PoolPhoto[]> = {
   tinctures: [
@@ -159,15 +168,7 @@ const photoPools: Record<string, PoolPhoto[]> = {
     },
     {
       file: "pre-roll-duo.jpg",
-      alt: "Close-up of an unlit pre-rolled cone, its open end packed with dried hemp flower, on a dark surface",
-    },
-    {
-      file: "flower-jar.jpg",
-      alt: "Dried hemp flower buds with orange hairs inside an open clear glass jar",
-    },
-    {
-      file: "flower-buds.jpg",
-      alt: "Close-up of dried hemp flower buds on a white cloth",
+      alt: "Close-up of an unlit pre-rolled cone, its open end packed with dried flower, on a dark surface",
     },
   ],
 };
@@ -180,7 +181,7 @@ function productImage(
   const pool = photoPools[category];
   const picked = pool?.[(photo + n - 1) % pool.length];
   if (!pool || !picked) {
-    throw new Error(`Mock catalog: no photo pool for category "${category}"`);
+    throw new Error(`Seed catalog: no photo pool for category "${category}"`);
   }
   return {
     url: `/images/products/${category}/${picked.file}`,
@@ -194,9 +195,6 @@ interface CategorySeed {
   description: string;
 }
 
-/** Category hidden unless `features.smokableHemp` is on. */
-export const SMOKABLE_HEMP_CATEGORY = "hemp-pre-rolls";
-
 const categorySeeds: CategorySeed[] = [
   {
     slug: "tinctures",
@@ -208,7 +206,7 @@ const categorySeeds: CategorySeed[] = [
     slug: "gummies-edibles",
     name: "Gummies & Edibles",
     description:
-      "Gummies, chocolate and honey sticks with a set amount per piece, packed in resealable pouches and tins.",
+      "Gummies, chocolate and honey straws with a set amount per piece, packed in resealable pouches and tins.",
   },
   {
     slug: "topicals",
@@ -229,10 +227,22 @@ const categorySeeds: CategorySeed[] = [
       "Lighters, grinders, papers and cones, trays, smell-proof jars and ashtrays. No nicotine, no tobacco.",
   },
   {
-    slug: SMOKABLE_HEMP_CATEGORY,
+    slug: HEMP_PRE_ROLLS_CATEGORY,
     name: "Hemp pre-rolls",
     description:
-      "Pre-rolled CBD hemp flower in unbleached cones, and loose hemp flower in smell-proof jars. Lab tested every batch. Not available in every state.",
+      "Pre-rolled CBD hemp flower in unbleached cones with card tips. Lab tested every batch. Not available in every state.",
+  },
+  {
+    slug: HEMP_FLOWER_CATEGORY,
+    name: "Hemp flower",
+    description:
+      "Whole CBD hemp flower by the strain, hand trimmed and slow cured, in 3.5 g to 28 g jars. Lab tested every batch. Not available in every state.",
+  },
+  {
+    slug: "glassware",
+    name: "Glassware",
+    description:
+      "Borosilicate beakers, water pipes, bubblers and hand pipes, plus silicone pieces, quartz bangers and a gravity infuser.",
   },
 ];
 
@@ -244,13 +254,18 @@ interface VariantSeed {
   inventory?: number;
 }
 
-interface ProductSeed {
+export interface ProductSeed {
   slug: string;
   name: string;
   sku: string;
   category: string;
-  /** Index into `photoPools[category]` for the primary (first) image. */
-  photo: number;
+  /**
+   * Index into `photoPools[category]` for the primary (first) image. Set
+   * exactly one of `photo` and `images`.
+   */
+  photo?: number;
+  /** The product's own photos, in `/images/products/<category>/`. */
+  images?: PoolPhoto[];
   shortDescription: string;
   description: [string, string];
   variants: VariantSeed[];
@@ -550,17 +565,17 @@ const productSeeds: ProductSeed[] = [
     category: "gummies-edibles",
     photo: 3,
     shortDescription:
-      "Wildflower honey with CBD isolate in single-serve straws. 10 sticks per box.",
+      "Wildflower honey with CBD isolate in single-serve straws. 10 straws per box.",
     description: [
       "Raw wildflower honey with CBD isolate mixed in, sealed in single-serve straws. The honey is thick and floral and the isolate does not change the taste.",
-      "Ten sticks per box. Snip the end and squeeze into tea, onto toast or straight from the straw. Each batch is lab tested and the amount per stick is printed on the box.",
+      "Ten straws per box. Snip the end and squeeze into tea, onto toast or straight from the straw. Each batch is lab tested and the amount per straw is printed on the box.",
     ],
     variants: [{ key: "10-10", name: "10 mg, 10 count", priceCents: 1800 }],
     specs: {
       strengthMg: 10,
       spectrum: "isolate",
       labTested: true,
-      servingSize: "1 stick",
+      servingSize: "1 straw",
       ingredients: ["wildflower honey", "CBD isolate"],
     },
     createdAt: "2025-04-26T10:00:00.000Z",
@@ -915,10 +930,10 @@ const productSeeds: ProductSeed[] = [
     category: "accessories",
     photo: 1,
     shortDescription:
-      "Four-piece aluminum grinder with diamond-cut teeth, a fine mesh screen and a magnetic lid. 55 mm across.",
+      "Four-piece brass grinder with diamond-cut teeth, a fine mesh screen and a magnetic lid. 55 mm across.",
     description: [
-      "A four-piece grinder machined from aluminum, with diamond-cut teeth, a fine stainless mesh screen and a collection chamber in the base. It measures 55 mm across and about 40 mm tall.",
-      "The lid is held on by a magnet and the threads are cut clean, so each section turns smoothly. Anodized matte black finish.",
+      "A four-piece grinder machined from brass, with diamond-cut teeth, a fine stainless mesh screen and a collection chamber in the base. It measures 55 mm across and about 40 mm tall.",
+      "The lid is held on by a magnet and the threads are cut clean, so each section turns smoothly. Brushed brass finish.",
     ],
     variants: [{ key: "55", name: "55 mm", priceCents: 2800 }],
     specs: null,
@@ -1020,7 +1035,7 @@ const productSeeds: ProductSeed[] = [
     slug: "classic-hemp-pre-roll",
     name: "Classic hemp pre-roll",
     sku: "HB-PRE-CLASSIC",
-    category: SMOKABLE_HEMP_CATEGORY,
+    category: HEMP_PRE_ROLLS_CATEGORY,
     photo: 0,
     shortDescription:
       "Full-spectrum CBD hemp flower, packed by hand into an unbleached cone with a card tip. 1 g each.",
@@ -1045,7 +1060,7 @@ const productSeeds: ProductSeed[] = [
     slug: "mini-hemp-pre-roll-pack",
     name: "Mini hemp pre-roll pack",
     sku: "HB-PRE-MINI",
-    category: SMOKABLE_HEMP_CATEGORY,
+    category: HEMP_PRE_ROLLS_CATEGORY,
     photo: 1,
     shortDescription:
       "Ten half-gram CBD hemp pre-rolls in unbleached cones, packed in a flat hinged tin.",
@@ -1067,7 +1082,7 @@ const productSeeds: ProductSeed[] = [
     slug: "pine-hemp-pre-roll-duo",
     name: "Pine hemp pre-roll duo",
     sku: "HB-PRE-PINE",
-    category: SMOKABLE_HEMP_CATEGORY,
+    category: HEMP_PRE_ROLLS_CATEGORY,
     photo: 2,
     shortDescription:
       "Two 1 g pre-rolls of a pine-forward CBD hemp flower, in unbleached cones with card tips.",
@@ -1089,8 +1104,17 @@ const productSeeds: ProductSeed[] = [
     slug: "hemp-flower-jar",
     name: "Hemp flower jar",
     sku: "HB-PRE-FLOWER",
-    category: SMOKABLE_HEMP_CATEGORY,
-    photo: 3,
+    category: HEMP_FLOWER_CATEGORY,
+    images: [
+      {
+        file: "flower-jar.jpg",
+        alt: "Dried flower buds with orange hairs inside an open clear glass jar",
+      },
+      {
+        file: "flower-buds.jpg",
+        alt: "Close-up of dried flower buds on a white cloth",
+      },
+    ],
     shortDescription:
       "Whole CBD hemp flower, trimmed by hand and packed in a smell-proof glass jar. 3.5 g or 7 g.",
     description: [
@@ -1128,10 +1152,10 @@ function toCategory(seed: CategorySeed, index: number): Category {
 function toProduct(seed: ProductSeed): Product {
   const [defaultVariant] = seed.variants;
   if (!defaultVariant) {
-    throw new Error(`Mock catalog: product "${seed.slug}" has no variants`);
+    throw new Error(`Seed catalog: product "${seed.slug}" has no variants`);
   }
   if (!categorySeeds.some((c) => c.slug === seed.category)) {
-    throw new Error(`Mock catalog: unknown category "${seed.category}"`);
+    throw new Error(`Seed catalog: unknown category "${seed.category}"`);
   }
   return {
     id: `prod_${seed.slug}`,
@@ -1152,10 +1176,27 @@ function toProduct(seed: ProductSeed): Product {
   };
 }
 
+function galleryFor(seed: ProductSeed): { url: string; alt: string }[] {
+  const { photo, images } = seed;
+  if (photo !== undefined && images === undefined) {
+    return Array.from({ length: IMAGE_COUNT }, (_, index) =>
+      productImage(seed.category, photo, index + 1),
+    );
+  }
+  if (photo === undefined && images !== undefined && images.length > 0) {
+    return images.map(({ file, alt }) => ({
+      url: `/images/products/${seed.category}/${file}`,
+      alt,
+    }));
+  }
+  throw new Error(
+    `Seed catalog: product "${seed.slug}" needs exactly one of "photo" or "images"`,
+  );
+}
+
 function toProductImages(seed: ProductSeed): ProductImage[] {
-  return Array.from({ length: IMAGE_COUNT }, (_, index) => {
+  return galleryFor(seed).map(({ url, alt }, index) => {
     const n = index + 1;
-    const { url, alt } = productImage(seed.category, seed.photo, n);
     return {
       id: `img_${seed.slug}-${n}`,
       productId: `prod_${seed.slug}`,
@@ -1535,7 +1576,8 @@ function toReview(seed: ReviewSeed, index: number): Review {
   return {
     id: `rev_${String(index + 1).padStart(3, "0")}`,
     productId: `prod_${seed.product}`,
-    userId: `user_${String(index + 1).padStart(3, "0")}`,
+    // Historical reviews have no account behind them.
+    userId: null,
     authorName: seed.author,
     rating: seed.rating,
     title: seed.title,
@@ -1546,19 +1588,7 @@ function toReview(seed: ReviewSeed, index: number): Review {
   };
 }
 
-/**
- * True when a category is shown under the given feature flags. Smokable hemp
- * is dropped entirely (not drafted) while its flag is off, so nothing leaks
- * into the category bar, rail, search or `/shop/hemp-pre-rolls`.
- */
-export function isCategoryEnabled(
-  categorySlug: string,
-  features: FeatureFlags,
-): boolean {
-  return categorySlug !== SMOKABLE_HEMP_CATEGORY || features.smokableHemp;
-}
-
-export interface MockCatalog {
+export interface SeedCatalog {
   categories: Category[];
   products: Product[];
   productImages: ProductImage[];
@@ -1566,35 +1596,27 @@ export interface MockCatalog {
   reviews: Review[];
 }
 
+/** House products, then the brand tinctures, glassware and hemp flower. */
+const allProductSeeds: ProductSeed[] = [
+  ...productSeeds,
+  ...brandTinctureSeeds,
+  ...glasswareSeeds,
+  ...hempFlowerSeeds,
+];
+
 /**
- * Builds the catalog for a set of feature flags. Pure: tests pass flags in
- * directly instead of changing `siteConfig`.
+ * The full catalog regardless of feature flags: 8 categories, the house
+ * products (all active except the archived `gift-box`), the brand tinctures
+ * and glassware from `./catalog-brands` and the strains from
+ * `./catalog-flower`. Pure, so the seed and tests build the same data.
+ * Visibility rules live in `@/lib/catalog-visibility`.
  */
-export function buildCatalog(features: FeatureFlags): MockCatalog {
-  // Ids and sort orders come from the full seed list so they stay stable
-  // whichever flags are on.
-  const categories = categorySeeds
-    .map(toCategory)
-    .filter((category) => isCategoryEnabled(category.slug, features));
-  const seeds = productSeeds.filter((seed) =>
-    isCategoryEnabled(seed.category, features),
-  );
-  const productIds = new Set(seeds.map((seed) => `prod_${seed.slug}`));
+export function buildSeedCatalog(): SeedCatalog {
   return {
-    categories,
-    products: seeds.map(toProduct),
-    productImages: seeds.flatMap(toProductImages),
-    productVariants: seeds.flatMap(toProductVariants),
-    reviews: reviewSeeds
-      .map(toReview)
-      .filter((review) => productIds.has(review.productId)),
+    categories: categorySeeds.map(toCategory),
+    products: allProductSeeds.map(toProduct),
+    productImages: allProductSeeds.flatMap(toProductImages),
+    productVariants: allProductSeeds.flatMap(toProductVariants),
+    reviews: reviewSeeds.map(toReview),
   };
 }
-
-export const {
-  categories,
-  products,
-  productImages,
-  productVariants,
-  reviews,
-}: MockCatalog = buildCatalog(siteConfig.features);

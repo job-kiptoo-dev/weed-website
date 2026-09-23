@@ -1,0 +1,7 @@
+# `vercel deploy` uploads the working tree (the project is not git-connected).
+# The CLI already skips .git, .next, node_modules, .vercel and .env.local.
+products.json
+.env*
+!.env.example
+*.tsbuildinfo
+coverage

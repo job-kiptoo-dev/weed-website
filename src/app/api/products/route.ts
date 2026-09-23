@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { toErrorResponse } from "@/lib/action-result";
 import { productService } from "@/services/product.service";
 
 const MAX_IDS = 50;
@@ -21,6 +22,10 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "ids is required" }, { status: 400 });
   }
 
-  const products = await productService.getProductsByIds(ids);
-  return Response.json({ products });
+  try {
+    const products = await productService.getProductsByIds(ids);
+    return Response.json({ products });
+  } catch (error) {
+    return toErrorResponse(error, "api.products");
+  }
 }

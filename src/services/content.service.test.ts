@@ -1,32 +1,68 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { siteConfig } from "@/lib/site-config";
-import { buildContent } from "@/mocks/content";
-import { categoryService } from "./category.service";
+import { buildContent } from "@/content/site-content";
+import { isCategoryEnabled } from "@/lib/catalog-visibility";
+import { buildSeedCatalog } from "@/lib/db/seed-data/catalog";
+import { siteConfig, type FeatureFlags } from "@/lib/site-config";
 import { contentService } from "./content.service";
-import { productService } from "./product.service";
+
+/** Active seed products and enabled categories under `features`. */
+function visibleSeedCatalog(features: FeatureFlags) {
+  const catalog = buildSeedCatalog();
+  const categories = catalog.categories.filter((c) =>
+    isCategoryEnabled(c.slug, features),
+  );
+  const categoryIds = new Set(categories.map((c) => c.id));
+  return {
+    categories,
+    products: catalog.products.filter(
+      (p) => p.status === "active" && categoryIds.has(p.categoryId),
+    ),
+  };
+}
 
 describe("contentService.getHomeContent", () => {
   it("points the promo banner at an active product on sale", async () => {
     const { promoBanner } = await contentService.getHomeContent();
-    const product = await productService.getProductBySlug(
-      promoBanner.productSlug,
+    const product = visibleSeedCatalog(siteConfig.features).products.find(
+      (p) => p.slug === promoBanner.productSlug,
     );
-    expect(product).not.toBeNull();
+    expect(product).toBeDefined();
     expect(product?.compareAtPriceCents ?? 0).toBeGreaterThan(
       product?.priceCents ?? 0,
     );
   });
 
-  it("resolves every row category and uses self-hosted images", async () => {
-    const content = await contentService.getHomeContent();
-    for (const slug of content.categoryRowSlugs) {
+  it("points the promo banner at a product visible under either flag", () => {
+    for (const smokableHemp of [true, false]) {
+      const features = { smokableHemp };
+      const { promoBanner } = buildContent(features).homeContent;
       expect(
-        await categoryService.getCategoryBySlug(slug),
-        slug,
-      ).not.toBeNull();
+        visibleSeedCatalog(features).products.some(
+          (p) => p.slug === promoBanner.productSlug,
+        ),
+        `smokableHemp=${smokableHemp}`,
+      ).toBe(true);
     }
+  });
+
+  it("resolves every row category under either flag", () => {
+    for (const smokableHemp of [true, false]) {
+      const features = { smokableHemp };
+      const slugs = new Set(
+        visibleSeedCatalog(features).categories.map((c) => c.slug),
+      );
+      for (const slug of buildContent(features).homeContent.categoryRowSlugs) {
+        expect(slugs.has(slug), `${slug} (smokableHemp=${smokableHemp})`).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("uses self-hosted images", async () => {
+    const content = await contentService.getHomeContent();
     const imageUrls = [
       content.promoBanner.imageUrl,
       ...content.bands.map((band) => band.imageUrl),
@@ -52,14 +88,15 @@ describe("contentService age and smokable hemp copy", () => {
     expect(eligibility?.paragraphs.join(" ")).toContain("21 or over");
   });
 
-  it("includes the state-restriction FAQ, terms and pre-roll row while the feature is on", async () => {
-    const faq = await contentService.getFaqItems();
-    expect(faq.some((item) => item.id === "faq-smokable-hemp")).toBe(true);
-    const terms = await contentService.getStaticPage("terms");
+  it("includes the state-restriction FAQ, terms and flower row while the feature is on", () => {
+    const content = buildContent({ smokableHemp: true });
+    expect(
+      content.faqItems.some((item) => item.id === "faq-smokable-hemp"),
+    ).toBe(true);
+    const terms = content.staticPages.find((page) => page.slug === "terms");
     expect(terms?.sections.map((s) => s.heading)).toContain("Smokable hemp");
-    const home = await contentService.getHomeContent();
-    expect(home.categoryRowSlugs).toEqual([
-      "hemp-pre-rolls",
+    expect(content.homeContent.categoryRowSlugs).toEqual([
+      "hemp-flower",
       "tinctures",
       "gummies-edibles",
     ]);
@@ -73,8 +110,29 @@ describe("contentService age and smokable hemp copy", () => {
     expect(content.homeContent.categoryRowSlugs).not.toContain(
       "hemp-pre-rolls",
     );
+    expect(content.homeContent.categoryRowSlugs).not.toContain("hemp-flower");
     const text = JSON.stringify(content).toLowerCase();
     expect(text).not.toContain("smokable");
     expect(text).not.toContain("pre-roll");
+    expect(text).not.toContain("hemp flower");
+    expect(text).not.toContain("hemp-flower");
+  });
+});
+
+describe("copy fixes", () => {
+  it("says honey straws, never honey sticks, in content and seed text", () => {
+    const text = JSON.stringify([
+      buildContent({ smokableHemp: true }),
+      buildContent({ smokableHemp: false }),
+      buildSeedCatalog(),
+    ]).toLowerCase();
+    expect(text).not.toMatch(/honey sticks?\b/);
+    expect(text).toContain("honey straws");
+  });
+
+  it("uses the store contact email in the privacy page", async () => {
+    const privacy = await contentService.getStaticPage("privacy");
+    const contact = privacy?.sections.find((s) => s.heading === "Contact");
+    expect(contact?.paragraphs.join(" ")).toContain(siteConfig.contact.email);
   });
 });

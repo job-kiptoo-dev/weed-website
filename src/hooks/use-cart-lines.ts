@@ -23,6 +23,9 @@ interface FetchResult {
   error: Error | null;
 }
 
+/** `/api/products` answers at most this many ids (the first in `idsKey`). */
+const MAX_REQUESTED_IDS = 50;
+
 const INITIAL_RESULT: FetchResult = {
   key: "",
   products: new Map(),
@@ -77,6 +80,28 @@ async function fetchProducts(
   return new Map(data.products.map((product) => [product.id, product]));
 }
 
+/**
+ * Stored lines whose product (or variant) no longer exists in the catalog.
+ * Only lines whose product was actually requested count; `/api/products`
+ * caps the id list, so products past the cap are never treated as missing.
+ */
+function findGhostLines(
+  lines: CartLine[],
+  idsKey: string,
+  products: Map<string, ProductSummary>,
+): CartLine[] {
+  const requested = new Set(idsKey.split(",").slice(0, MAX_REQUESTED_IDS));
+  return lines.filter((line) => {
+    if (!requested.has(line.productId)) return false;
+    const product = products.get(line.productId);
+    if (!product) return true;
+    return (
+      line.variantId !== null &&
+      !product.variants.some((variant) => variant.id === line.variantId)
+    );
+  });
+}
+
 function priceLines(
   lines: CartLine[],
   products: Map<string, ProductSummary>,
@@ -109,7 +134,7 @@ function priceLines(
 
 export function useCartLines(): UseCartLinesResult {
   const hydrated = useHydrated();
-  const { lines } = useCart();
+  const { lines, removeLine } = useCart();
   const idsKey = uniqueSortedIds(lines);
   const [refetchToken, setRefetchToken] = useState(0);
   const [result, setResult] = useState<FetchResult>(INITIAL_RESULT);
@@ -136,6 +161,19 @@ export function useCartLines(): UseCartLinesResult {
 
     return () => controller.abort();
   }, [idsKey, requestKey]);
+
+  // Prune lines for products or variants that no longer exist, but only
+  // after a successful fetch for the current lines: never while loading or
+  // after an error, so a failed request cannot empty the cart.
+  useEffect(() => {
+    if (requestKey === "" || result.key !== requestKey || result.error) return;
+    const ghosts = findGhostLines(lines, idsKey, result.products);
+    if (ghosts.length === 0) return;
+    console.info(
+      `Cart: removed ${ghosts.length} unavailable item(s) from the cart.`,
+    );
+    for (const ghost of ghosts) removeLine(ghost.productId, ghost.variantId);
+  }, [result, requestKey, idsKey, lines, removeLine]);
 
   let status: CartLinesStatus;
   if (!hydrated) {

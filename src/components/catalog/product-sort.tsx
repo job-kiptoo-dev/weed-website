@@ -5,7 +5,7 @@ import type { ChangeEvent } from "react";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 import { buildShopHref, type ShopQuery } from "@/lib/shop-query";
-import type { ProductSort as ProductSortValue } from "@/services/product.service";
+import type { ProductSort as ProductSortValue } from "@/types/catalog";
 
 interface ProductSortProps {
   current: ProductSortValue;

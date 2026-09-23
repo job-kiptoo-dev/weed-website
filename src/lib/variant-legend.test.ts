@@ -17,6 +17,17 @@ describe("variantLegend", () => {
     ).toBe("Size");
     expect(variantLegend([{ name: "10 sachets" }], true)).toBe("Size");
     expect(
+      variantLegend(
+        [
+          { name: "3.5 g" },
+          { name: "7 g" },
+          { name: "14 g" },
+          { name: "28 g" },
+        ],
+        true,
+      ),
+    ).toBe("Size");
+    expect(
       variantLegend([{ name: "500 mg" }, { name: "30 count" }], true),
     ).toBe("Size");
   });

@@ -1,6 +1,6 @@
 /**
- * Hand-built fixtures for component tests. Tests never import `src/mocks/*`
- * (that module is reserved for services), so build small view objects here.
+ * Hand-built fixtures for component tests. Tests never import the seed data
+ * (`src/lib/db/seed-data`), so build small view objects here.
  */
 import type { ProductSummary, ProductVariant } from "@/types/catalog";
 

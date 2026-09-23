@@ -65,7 +65,7 @@ describe("ContactForm", () => {
     submit();
 
     expect(screen.getByRole("status").textContent).toBe(
-      "Sending isn't wired up yet. Email us at hello@havenbotanics.example in the meantime.",
+      "Sending isn't wired up yet. Email us at hello@botanicssupply.example in the meantime.",
     );
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText(/thanks|sent/i)).toBeNull();

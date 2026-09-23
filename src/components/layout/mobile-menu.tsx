@@ -7,6 +7,7 @@ import { Menu } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import type { NavLink } from "@/lib/site-config";
 import type { CategoryRef } from "@/types/catalog";
+import { AccountNavLink } from "./account-nav-link";
 
 interface MobileMenuProps {
   nav: readonly NavLink[];
@@ -49,6 +50,9 @@ export function MobileMenu({ nav, categories, className }: MobileMenuProps) {
                 </Link>
               </li>
             ))}
+            <li>
+              <AccountNavLink className={linkClass} onNavigate={close} />
+            </li>
           </ul>
           <div>
             <p className="px-3 pb-2 text-sm font-medium text-ink-muted">

@@ -1,4 +1,4 @@
-import type { ProductSort } from "@/services/product.service";
+import type { ProductSort } from "@/types/catalog";
 
 export interface ShopQuery {
   q?: string;
@@ -8,6 +8,9 @@ export interface ShopQuery {
   inStock?: boolean;
   page?: number;
 }
+
+/** Longest search query accepted; longer input is truncated, not rejected. */
+export const MAX_QUERY_LENGTH = 100;
 
 /** Products per page on `/shop` and `/shop/<category>`. */
 export const SHOP_PAGE_SIZE = 20;
@@ -48,7 +51,7 @@ function parsePage(value: string | undefined): number | undefined {
 export function parseShopQuery(sp: SearchParamsRecord): ShopQuery {
   const query: ShopQuery = {};
 
-  const q = first(sp.q)?.trim();
+  const q = first(sp.q)?.trim().slice(0, MAX_QUERY_LENGTH).trim();
   if (q) query.q = q;
 
   const sort = first(sp.sort);

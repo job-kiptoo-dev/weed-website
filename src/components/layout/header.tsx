@@ -3,6 +3,7 @@ import { Leaf } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { siteConfig } from "@/lib/site-config";
 import type { CategoryRef } from "@/types/catalog";
+import { AccountNavLink } from "./account-nav-link";
 import { CartButton } from "./cart-button";
 import { Container } from "./container";
 import { MobileMenu } from "./mobile-menu";
@@ -39,6 +40,7 @@ export function Header({ categories, className }: HeaderProps) {
               {link.label}
             </Link>
           ))}
+          <AccountNavLink className={navLinkClass} />
         </nav>
         <div className="ml-auto flex items-center gap-1">
           <SearchBar />

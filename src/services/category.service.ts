@@ -1,33 +1,62 @@
 /**
- * Phase 1 category service backed by `src/mocks/catalog`. Phase 2 swaps the
- * mock reads for Drizzle queries; the signatures and view types stay the same.
+ * Category reads from Postgres. `createCategoryService` takes the database
+ * and feature flags so tests can inject both; `categoryService` is bound to
+ * the app database and `siteConfig.features`. Categories a flag hides (see
+ * `@/lib/catalog-visibility`) are never returned.
  */
-import { categories, products } from "@/mocks/catalog";
-import type { Category, CategoryWithCount } from "@/types/catalog";
+import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { getDb } from "@/lib/db/client";
+import { categories, products } from "@/lib/db/schema";
+import { siteConfig } from "@/lib/site-config";
+import type { CategoryWithCount } from "@/types/catalog";
+import { toCategoryWithCount } from "./catalog.mappers";
+import { visibleCategory, type CatalogServiceDeps } from "./product.queries";
 
-function withCount(category: Category): CategoryWithCount {
-  const productCount = products.filter(
-    (p) => p.categoryId === category.id && p.status === "active",
-  ).length;
-  return { ...category, productCount };
+export function createCategoryService({ getDb, features }: CatalogServiceDeps) {
+  /** Visible categories with their active product count (zero-inventory included). */
+  async function selectCategories(
+    extra: SQL | undefined,
+  ): Promise<CategoryWithCount[]> {
+    const db = await getDb();
+    const rows = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        description: categories.description,
+        imageUrl: categories.imageUrl,
+        sortOrder: categories.sortOrder,
+        createdAt: categories.createdAt,
+        updatedAt: categories.updatedAt,
+        productCount: sql<number>`(count(${products.id}) filter (where ${products.status} = 'active'))::int`,
+      })
+      .from(categories)
+      .leftJoin(products, eq(products.categoryId, categories.id))
+      .where(and(visibleCategory(features), extra))
+      .groupBy(categories.id)
+      .orderBy(asc(categories.sortOrder), asc(categories.id));
+    return rows.map(({ productCount, ...row }) =>
+      toCategoryWithCount(row, Number(productCount)),
+    );
+  }
+
+  async function listCategories(): Promise<CategoryWithCount[]> {
+    return selectCategories(undefined);
+  }
+
+  async function getCategoryBySlug(
+    slug: string,
+  ): Promise<CategoryWithCount | null> {
+    const [category] = await selectCategories(eq(categories.slug, slug));
+    return category ?? null;
+  }
+
+  return { listCategories, getCategoryBySlug };
 }
 
-async function listCategories(): Promise<CategoryWithCount[]> {
-  await Promise.resolve();
-  return [...categories]
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(withCount);
-}
+export type CategoryService = ReturnType<typeof createCategoryService>;
 
-async function getCategoryBySlug(
-  slug: string,
-): Promise<CategoryWithCount | null> {
-  await Promise.resolve();
-  const category = categories.find((c) => c.slug === slug);
-  return category ? withCount(category) : null;
-}
-
-export const categoryService = {
-  listCategories,
-  getCategoryBySlug,
-};
+export const categoryService: CategoryService = createCategoryService({
+  getDb,
+  features: siteConfig.features,
+});
