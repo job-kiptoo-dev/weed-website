@@ -135,4 +135,23 @@ describe("copy fixes", () => {
     const contact = privacy?.sections.find((s) => s.heading === "Contact");
     expect(contact?.paragraphs.join(" ")).toContain(siteConfig.contact.email);
   });
+
+  it("says what checkout collects, who sees it and how long it is kept", async () => {
+    const privacy = await contentService.getStaticPage("privacy");
+    const text = (privacy?.sections ?? [])
+      .flatMap((section) => section.paragraphs)
+      .join(" ");
+
+    // What is collected, and why.
+    expect(text).toMatch(/billing address and delivery address/i);
+    expect(text).toMatch(/phone number/i);
+    expect(text).toMatch(/what you ordered/i);
+    // Zero PCI scope (spec R4): no card data is ever collected here.
+    expect(text).toMatch(/never collect card numbers, CVV codes/i);
+    expect(text).not.toMatch(/payment provider/i);
+    // Who sees it, and retention.
+    expect(text).toMatch(/emailed to the store owner's inbox/i);
+    expect(text).toMatch(/order records.*for 7 years/i);
+    expect(text).toMatch(/deleted when the account is deleted/i);
+  });
 });

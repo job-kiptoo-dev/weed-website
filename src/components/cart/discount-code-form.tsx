@@ -10,11 +10,14 @@ interface DiscountCodeFormProps {
 }
 
 const EMPTY_CODE_MESSAGE = "Enter a code.";
-const INFO_MESSAGE = "Discount codes arrive with checkout in a later phase.";
+const INFO_MESSAGE =
+  "Discount codes are applied at checkout. Enter your code in the coupon box there and we’ll check it before you place your order.";
 
 /**
- * Phase 1 placeholder: accepts a code but never applies one. Checkout (and
- * real discount validation) lands in a later phase.
+ * The cart never validates or applies a code: coupons are checked and priced
+ * by the server at checkout, so this form only takes a code down and points
+ * the customer at the coupon box there. It must never imply the typed code is
+ * valid or already applied.
  */
 export function DiscountCodeForm({ className }: DiscountCodeFormProps) {
   const [code, setCode] = useState("");

@@ -9,10 +9,15 @@ import {
 } from "./send";
 
 /*
- * Store-owner notifications. Phase 2 ships these as stubs that nothing calls
- * yet: Phase 6 calls notifyNewOrder from the Stripe webhook (first
- * transition to paid only) and Phase 10 calls notifyContactMessage from the
- * contact form action.
+ * Store-owner notifications. `orderService.createOrder` calls notifyNewOrder
+ * once, after its transaction commits; Phase 10 calls notifyContactMessage
+ * from the contact form action.
+ *
+ * Neither ever sends while `RESEND_API_KEY` is unset: `sendEmail` only logs
+ * and returns `{ sent: false, reason: "not-configured" }`. An unset
+ * ORDER_NOTIFICATION_EMAIL means there is no recipient at all, which is the
+ * same result. Callers log that outcome, so a shop receiving no order emails
+ * shows up in the server logs rather than silently.
  */
 
 export type NotificationEnv = Pick<

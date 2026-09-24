@@ -62,3 +62,16 @@ export class ConflictError extends AppError {
     super("CONFLICT", message, 409);
   }
 }
+
+/**
+ * A rate-limited caller. Reported with the `CONFLICT` code so the client
+ * shape is unchanged, and HTTP 429 for route handlers. The message never
+ * names the budget, the key or how much of it is left.
+ */
+export class RateLimitError extends AppError {
+  constructor(
+    message = "Too many attempts. Please wait a few minutes and try again.",
+  ) {
+    super("CONFLICT", message, 429);
+  }
+}

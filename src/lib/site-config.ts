@@ -1,3 +1,9 @@
+import {
+  PAYMENT_METHOD_PRESETS,
+  type PaymentMethodConfig,
+} from "@/lib/payment-methods";
+import { HOUR_MS, MINUTE_MS, type RateLimitBudget } from "@/lib/rate-limit";
+
 export interface NavLink {
   label: string;
   href: string;
@@ -15,9 +21,59 @@ export interface FeatureFlags {
   smokableHemp: boolean;
 }
 
+/** Percent rates; a tax row only renders when its rate is above 0. */
+export interface CheckoutTaxRates {
+  excisePercent: number;
+  salesPercent: number;
+}
+
+export interface CheckoutDeliveryRules {
+  freeDeliveryThresholdCents: number;
+  deliveryFeeCents: number;
+  /**
+   * Any saving for choosing pickup. It goes into `discountCents`, never into
+   * a negative `shippingCents` (the `orders_money_check` constraint).
+   */
+  pickupDiscountCents: number;
+}
+
+/**
+ * Budgets for the checkout actions, which are open to guests: without these
+ * a script can drain inventory, burn a coupon campaign's uses or guess codes
+ * (see `@/app/(checkout)/checkout/actions`). Every number is generous next to
+ * one real session: the form re-quotes on cart, order-type and coupon changes
+ * (debounced), and a customer fixing form errors never reaches the
+ * place-order budget because only schema-valid attempts count.
+ */
+export interface CheckoutRateLimits {
+  placeOrderPerIp: RateLimitBudget;
+  placeOrderPerEmail: RateLimitBudget;
+  quotePerIp: RateLimitBudget;
+  /** Distinct coupon codes quoted per IP; closes the coupon oracle. */
+  quoteCouponCodesPerIp: RateLimitBudget;
+}
+
+export interface CheckoutSecurityBadge {
+  id: string;
+  label: string;
+  /** Rendered as the padlock from `@/components/ui/icons`. */
+  icon?: "lock";
+}
+
 const features: FeatureFlags = {
   smokableHemp: true,
 };
+
+/**
+ * Shipping rates live in their own const so `checkout.delivery` can point at
+ * them instead of repeating the numbers: `/cart` and `/checkout` must charge
+ * the same delivery fee.
+ */
+const shipping = {
+  freeThresholdCents: 7500,
+  flatRateCents: 695,
+  estimateText: "Ships in 1 to 2 business days",
+} as const;
 
 /** Store description; names flower and pre-rolls only while on sale. */
 export function describeStore(flags: FeatureFlags): string {
@@ -51,13 +107,90 @@ export const siteConfig = {
     { label: "Instagram", href: "https://instagram.com/botanicssupplyco" },
     { label: "TikTok", href: "https://tiktok.com/@botanicssupplyco" },
   ] satisfies NavLink[],
-  shipping: {
-    freeThresholdCents: 7500,
-    flatRateCents: 695,
-    estimateText: "Ships in 1 to 2 business days",
-  },
+  shipping,
   cart: {
     maxQuantityPerLine: 10,
+  },
+  checkout: {
+    /** Both 0 until the client confirms the real rates. */
+    taxes: {
+      excisePercent: 0,
+      salesPercent: 0,
+    } satisfies CheckoutTaxRates,
+    delivery: {
+      freeDeliveryThresholdCents: shipping.freeThresholdCents,
+      deliveryFeeCents: shipping.flatRateCents,
+      pickupDiscountCents: 0,
+    } satisfies CheckoutDeliveryRules,
+    rateLimits: {
+      placeOrderPerIp: { limit: 5, windowMs: HOUR_MS },
+      placeOrderPerEmail: { limit: 3, windowMs: HOUR_MS },
+      /**
+       * One session re-quotes a handful of times a minute at most (250 ms
+       * debounce, one request per settled change), so 60 leaves plenty of
+       * room for editing the cart and retrying a coupon.
+       */
+      quotePerIp: { limit: 60, windowMs: MINUTE_MS },
+      quoteCouponCodesPerIp: { limit: 5, windowMs: HOUR_MS },
+    } satisfies CheckoutRateLimits,
+    /**
+     * Flip `enabled` to false to stop offering a method; the server rejects
+     * disabled ones. `logo` points at a mark in `public/images/payments`
+     * (see the README there) — without one the UI shows a text badge, which
+     * is what Chime does since it has no freely licensed mark.
+     */
+    paymentMethods: [
+      {
+        ...PAYMENT_METHOD_PRESETS.zelle,
+        enabled: true,
+        logo: "/images/payments/zelle.svg",
+      },
+      {
+        ...PAYMENT_METHOD_PRESETS["apple-pay"],
+        enabled: true,
+        logo: "/images/payments/apple-pay.svg",
+      },
+      { ...PAYMENT_METHOD_PRESETS.chime, enabled: true },
+      {
+        ...PAYMENT_METHOD_PRESETS.card,
+        enabled: true,
+        logo: "/images/payments/card.svg",
+      },
+      {
+        ...PAYMENT_METHOD_PRESETS.bitcoin,
+        enabled: true,
+        logo: "/images/payments/bitcoin.svg",
+      },
+      {
+        ...PAYMENT_METHOD_PRESETS.paypal,
+        enabled: true,
+        logo: "/images/payments/paypal.svg",
+      },
+      {
+        ...PAYMENT_METHOD_PRESETS["cash-app"],
+        enabled: true,
+        logo: "/images/payments/cash-app.svg",
+      },
+      {
+        ...PAYMENT_METHOD_PRESETS.venmo,
+        enabled: true,
+        logo: "/images/payments/venmo.svg",
+      },
+    ] satisfies PaymentMethodConfig[],
+    /**
+     * Claims we can actually stand behind. No "Accredited Business",
+     * antivirus seals or card-network marks. The "we accept" line is derived
+     * from the enabled `paymentMethods` above, never listed here, so a badge
+     * can't advertise a method we don't take.
+     */
+    securityBadges: [
+      { id: "secure-checkout", label: "Secure checkout", icon: "lock" },
+      {
+        id: "no-card-details",
+        label: "We never see or store card details",
+      },
+      { id: "lab-tested", label: "Lab tested, 21+" },
+    ] satisfies CheckoutSecurityBadge[],
   },
   contact: {
     email: "hello@botanicssupply.example",

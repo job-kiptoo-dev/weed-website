@@ -91,6 +91,15 @@ export interface ProductDetail extends ProductSummary {
   reviews: Review[];
 }
 
+/** One published review with the product it is about (checkout sidebar). */
+export interface FeaturedReview extends Pick<
+  Review,
+  "id" | "authorName" | "rating" | "title" | "body" | "createdAt"
+> {
+  productName: string;
+  productSlug: string;
+}
+
 export interface SearchSuggestion {
   type: "product" | "category";
   label: string;

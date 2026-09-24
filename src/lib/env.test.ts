@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { EnvValidationError, parseServerEnv } from "./env";
+import { EnvValidationError, parseServerEnv, stripeConfigured } from "./env";
 
 const SECRET = "s".repeat(40);
+
+// Shapes only, never a real key: these are the prefixes the schema checks.
+const STRIPE_TEST_KEYS = {
+  STRIPE_SECRET_KEY: "sk_test_0000000000",
+  STRIPE_PUBLISHABLE_KEY: "pk_test_0000000000",
+  STRIPE_WEBHOOK_SECRET: "whsec_0000000000",
+} as const;
+const STRIPE_LIVE_KEYS = {
+  STRIPE_SECRET_KEY: "sk_live_0000000000",
+  STRIPE_PUBLISHABLE_KEY: "pk_live_0000000000",
+  STRIPE_WEBHOOK_SECRET: "whsec_0000000000",
+} as const;
 
 function captureError(source: Record<string, string | undefined>) {
   try {
@@ -112,6 +124,117 @@ describe("parseServerEnv", () => {
     });
     expect(error.variables).toEqual(["ORDER_NOTIFICATION_EMAIL"]);
     expect(error.message).toContain("must be a valid email");
+  });
+
+  it("parses a full test-mode Stripe trio", () => {
+    const env = parseServerEnv({
+      BETTER_AUTH_SECRET: SECRET,
+      ...STRIPE_TEST_KEYS,
+    });
+    expect(stripeConfigured(env)).toBe(true);
+  });
+
+  it("leaves Stripe unconfigured when no Stripe variable is set", () => {
+    const env = parseServerEnv({ BETTER_AUTH_SECRET: SECRET });
+    expect(env.STRIPE_SECRET_KEY).toBeUndefined();
+    expect(stripeConfigured(env)).toBe(false);
+  });
+
+  it("names the missing Stripe variables when only the secret key is set", () => {
+    const error = captureError({
+      BETTER_AUTH_SECRET: SECRET,
+      STRIPE_SECRET_KEY: STRIPE_TEST_KEYS.STRIPE_SECRET_KEY,
+    });
+    expect(error.variables).toEqual([
+      "STRIPE_PUBLISHABLE_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+    ]);
+    expect(error.message).toContain("STRIPE_PUBLISHABLE_KEY is required");
+    expect(error.message).toContain("STRIPE_WEBHOOK_SECRET is required");
+    expect(error.message).not.toContain(STRIPE_TEST_KEYS.STRIPE_SECRET_KEY);
+  });
+
+  it("names the missing webhook secret when the two keys are set", () => {
+    const error = captureError({
+      BETTER_AUTH_SECRET: SECRET,
+      STRIPE_SECRET_KEY: STRIPE_TEST_KEYS.STRIPE_SECRET_KEY,
+      STRIPE_PUBLISHABLE_KEY: STRIPE_TEST_KEYS.STRIPE_PUBLISHABLE_KEY,
+    });
+    expect(error.variables).toEqual(["STRIPE_WEBHOOK_SECRET"]);
+  });
+
+  it.each([
+    ["STRIPE_SECRET_KEY", "pk_test_wrong_family"],
+    ["STRIPE_PUBLISHABLE_KEY", "sk_test_wrong_family"],
+    ["STRIPE_WEBHOOK_SECRET", "not_a_signing_secret"],
+  ])("rejects a malformed %s without echoing it", (name, value) => {
+    const error = captureError({
+      BETTER_AUTH_SECRET: SECRET,
+      ...STRIPE_TEST_KEYS,
+      [name]: value,
+    });
+    expect(error.variables).toContain(name);
+    expect(error.message).not.toContain(value);
+  });
+
+  it("rejects mixed test and live key modes", () => {
+    const error = captureError({
+      BETTER_AUTH_SECRET: SECRET,
+      ...STRIPE_TEST_KEYS,
+      STRIPE_PUBLISHABLE_KEY: STRIPE_LIVE_KEYS.STRIPE_PUBLISHABLE_KEY,
+    });
+    expect(error.variables).toEqual(["STRIPE_PUBLISHABLE_KEY"]);
+    expect(error.message).toContain("must be a test key");
+  });
+
+  it("rejects live keys outside VERCEL_ENV=production", () => {
+    const error = captureError({
+      BETTER_AUTH_SECRET: SECRET,
+      VERCEL: "1",
+      VERCEL_ENV: "preview",
+      DATABASE_URL: "postgres://u:p@db.example.com/app",
+      ...STRIPE_LIVE_KEYS,
+    });
+    expect(error.variables).toEqual([
+      "STRIPE_SECRET_KEY",
+      "STRIPE_PUBLISHABLE_KEY",
+    ]);
+    expect(error.message).toContain(
+      "must be a test key unless VERCEL_ENV=production",
+    );
+  });
+
+  it("rejects live keys on a local machine with no VERCEL_ENV", () => {
+    const error = captureError({
+      BETTER_AUTH_SECRET: SECRET,
+      ...STRIPE_LIVE_KEYS,
+    });
+    expect(error.variables).toEqual([
+      "STRIPE_SECRET_KEY",
+      "STRIPE_PUBLISHABLE_KEY",
+    ]);
+  });
+
+  it("accepts live keys when VERCEL_ENV=production", () => {
+    const env = parseServerEnv({
+      BETTER_AUTH_SECRET: SECRET,
+      VERCEL: "1",
+      VERCEL_ENV: "production",
+      BETTER_AUTH_URL: "https://shop.example.com",
+      DATABASE_URL: "postgres://u:p@db.example.com/app",
+      ...STRIPE_LIVE_KEYS,
+    });
+    expect(stripeConfigured(env)).toBe(true);
+  });
+
+  it("treats blank Stripe values as unset rather than half-configured", () => {
+    const env = parseServerEnv({
+      BETTER_AUTH_SECRET: SECRET,
+      STRIPE_SECRET_KEY: "",
+      STRIPE_PUBLISHABLE_KEY: "",
+      STRIPE_WEBHOOK_SECRET: "",
+    });
+    expect(stripeConfigured(env)).toBe(false);
   });
 
   it("lists every invalid variable at once", () => {

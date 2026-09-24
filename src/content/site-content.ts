@@ -179,16 +179,32 @@ const baseStaticPages: StaticPage[] = [
       "This page explains what information we collect when you use our site and how we use it.",
     sections: [
       {
-        heading: "What we collect",
+        heading: "What we collect at checkout",
         paragraphs: [
-          "When you place an order we collect your name, email address, shipping address and payment details. Payment details are handled by our payment provider and are never stored on our servers.",
-          "If you sign up for our newsletter we store your email address until you unsubscribe.",
+          "When you place an order we collect your name, your billing address and delivery address, your phone number, your email address, and what you ordered. Company name and order notes are optional, and anything you type into them is stored with the order too.",
+          "We need these to price the order, get it to you or hand it over at pickup, and reach you to arrange payment. The phone number and email are how we contact you about that order.",
+          "If you sign up for our newsletter, or tick the marketing box at checkout, we store your email address until you unsubscribe.",
         ],
       },
       {
-        heading: "How we use it",
+        heading: "Payment details",
         paragraphs: [
-          "We use your information to process and ship orders, answer support requests, and send the newsletter if you asked for it. We do not sell your information to anyone.",
+          "We never collect card numbers, CVV codes, bank logins or wallet credentials on this site. There is no card form anywhere on it, and no payment is taken when you place an order.",
+          "Whichever payment method you choose at checkout, a person contacts you afterwards to arrange payment. Nothing you tell us then is stored on the site.",
+        ],
+      },
+      {
+        heading: "How we use it and who sees it",
+        paragraphs: [
+          "We use your information to price and fulfil orders, arrange payment, answer support requests, and send the newsletter if you asked for it. We do not sell your information to anyone, and we do not use it for advertising.",
+          "Every new order is emailed to the store owner's inbox, which is how we know to pack it and call you. The owner is the only person who reads your order details, apart from any delivery service we use to get the order to you.",
+        ],
+      },
+      {
+        heading: "How long we keep it",
+        paragraphs: [
+          "We keep order records, including the copy of the address as it was when you ordered, for 7 years. Tax and accounting rules require us to be able to show what we sold and to whom, so we cannot delete these earlier.",
+          "Addresses saved to an account are deleted when the account is deleted. Newsletter sign-ups are removed when you unsubscribe.",
         ],
       },
       {
@@ -200,7 +216,7 @@ const baseStaticPages: StaticPage[] = [
       {
         heading: "Contact",
         paragraphs: [
-          `To ask about or delete the information we hold about you, email ${contact.email}.`,
+          `To ask what we hold about you, or to have it deleted, email ${contact.email}. We delete what we are not required to keep, and tell you what we have to keep and for how long.`,
         ],
       },
     ],

@@ -8,7 +8,7 @@ import {
   pgTable,
   text,
 } from "drizzle-orm/pg-core";
-import type { OrderAddress } from "@/types/order";
+import type { CheckoutMeta, OrderAddress } from "@/types/order";
 import { users } from "./auth";
 import { products, productVariants } from "./catalog";
 import { orderStatus, paymentStatus } from "./enums";
@@ -43,6 +43,9 @@ export const orders = pgTable(
     shippingAddress: jsonb("shipping_address").$type<OrderAddress>().notNull(),
     billingAddress: jsonb("billing_address").$type<OrderAddress>(),
     stripePaymentIntentId: text("stripe_payment_intent_id").unique(),
+    // Checkout choices (payment method, order type, the excise/sales split,
+    // marketing opt-in). Null on orders placed before the column existed.
+    checkoutMeta: jsonb("checkout_meta").$type<CheckoutMeta>(),
     notes: text("notes"),
     ...timestamps(),
   },

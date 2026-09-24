@@ -13,17 +13,19 @@ describe("DiscountCodeForm", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("shows the info message and never a success state for any code", () => {
+  it("points at the checkout coupon box and never claims a code is applied", () => {
     render(<DiscountCodeForm />);
     fireEvent.change(screen.getByLabelText("Discount code"), {
       target: { value: "WELCOME10" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    expect(screen.getByRole("status").textContent).toBe(
-      "Discount codes arrive with checkout in a later phase.",
-    );
+    const status = screen.getByRole("status").textContent ?? "";
+    expect(status).toContain("Discount codes are applied at checkout.");
+    expect(status).toContain("coupon box");
+    expect(status).not.toMatch(/later phase/i);
     expect(screen.queryByText("Enter a code.")).toBeNull();
-    expect(screen.queryByText(/applied/i)).toBeNull();
+    expect(status).not.toMatch(/\bvalid\b/i);
+    expect(screen.queryByText(/code applied/i)).toBeNull();
     expect(screen.getByRole("button", { name: "Apply" })).toBeTruthy();
   });
 
