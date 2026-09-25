@@ -3,8 +3,8 @@ import {
   PAYMENT_METHOD_IDS,
   PAYMENT_METHOD_PRESETS,
   type PaymentMethodConfig,
+  effectivePaymentProvider,
   enabledPaymentMethods,
-  paymentProviderFor,
   resolvePaymentInstructions,
 } from "./payment-methods";
 
@@ -37,23 +37,45 @@ describe("PAYMENT_METHOD_PRESETS", () => {
   );
 
   it.each(PAYMENT_METHOD_IDS)("%s never claims payment was taken", (id) => {
-    const text = PAYMENT_METHOD_PRESETS[id].instructions.toLowerCase();
-    for (const claim of [
-      "payment received",
-      "payment successful",
-      "paid in full",
-      "buyer protection",
-      "protected",
-      "refund guarantee",
-    ]) {
-      expect(text).not.toContain(claim);
+    const preset = PAYMENT_METHOD_PRESETS[id];
+    for (const copy of [preset.instructions, preset.stripeInstructions]) {
+      if (copy === undefined) continue;
+      const text = copy.toLowerCase();
+      for (const claim of [
+        "payment received",
+        "payment successful",
+        "paid in full",
+        "buyer protection",
+        "protected",
+        "refund guarantee",
+      ]) {
+        expect(text).not.toContain(claim);
+      }
     }
   });
 
-  it("tells card payers that no card details are entered here", () => {
+  it("tells card payers arranging by phone that no card details are entered", () => {
     const { instructions } = PAYMENT_METHOD_PRESETS.card;
     expect(instructions).toContain("No card details are ever entered");
     expect(instructions.toLowerCase()).not.toContain("cvv");
+  });
+
+  it("gives the card method Stripe copy for the on-page fields", () => {
+    const copy = PAYMENT_METHOD_PRESETS.card.stripeInstructions;
+    expect(copy).toBeDefined();
+    expect(copy).toContain("Enter your card details on this page");
+    expect(copy).toContain("Stripe");
+    expect(copy).toContain("never see or store your card number");
+    expect(copy).toContain("{phone}");
+    expect(copy).not.toMatch(PHONE_PATTERN);
+  });
+
+  it("gives Stripe copy to the Stripe-intent methods only", () => {
+    for (const id of PAYMENT_METHOD_IDS) {
+      const preset = PAYMENT_METHOD_PRESETS[id];
+      if (preset.provider === "stripe") continue;
+      expect(preset.stripeInstructions).toBeUndefined();
+    }
   });
 
   it.each(["zelle", "chime", "cash-app", "venmo", "bitcoin"] as const)(
@@ -65,7 +87,7 @@ describe("PAYMENT_METHOD_PRESETS", () => {
     },
   );
 
-  it("marks only the card method as taken by Stripe", () => {
+  it("marks only the card method with the intent to use Stripe", () => {
     expect(PAYMENT_METHOD_PRESETS.card.provider).toBe("stripe");
     for (const id of PAYMENT_METHOD_IDS) {
       if (id === "card") continue;
@@ -99,6 +121,34 @@ describe("resolvePaymentInstructions", () => {
     ).toBe("We'll be in touch.");
   });
 
+  it("prefers the Stripe copy only when the provider is stripe", () => {
+    const method = {
+      instructions: "A person will call {phone}.",
+      stripeInstructions: "Enter your card below; questions on {phone}.",
+    };
+    const contact = { phone: "(555) 010-4242" };
+
+    expect(resolvePaymentInstructions(method, contact)).toBe(
+      "A person will call (555) 010-4242.",
+    );
+    expect(resolvePaymentInstructions(method, contact, "manual")).toBe(
+      "A person will call (555) 010-4242.",
+    );
+    expect(resolvePaymentInstructions(method, contact, "stripe")).toBe(
+      "Enter your card below; questions on (555) 010-4242.",
+    );
+  });
+
+  it("falls back to the manual copy when a method has no Stripe copy", () => {
+    expect(
+      resolvePaymentInstructions(
+        { instructions: "Call {phone}." },
+        { phone: "(555) 010-4242" },
+        "stripe",
+      ),
+    ).toBe("Call (555) 010-4242.");
+  });
+
   it("resolves a real preset without leaving a placeholder behind", () => {
     const resolved = resolvePaymentInstructions(PAYMENT_METHOD_PRESETS.zelle, {
       phone: "(555) 010-4242",
@@ -108,17 +158,25 @@ describe("resolvePaymentInstructions", () => {
   });
 });
 
-describe("paymentProviderFor", () => {
+describe("effectivePaymentProvider", () => {
   const methods = [configFor("zelle", true), configFor("card", true)];
 
-  it("reads the provider off the configured method", () => {
-    expect(paymentProviderFor("card", methods)).toBe("stripe");
-    expect(paymentProviderFor("zelle", methods)).toBe("manual");
+  it("resolves a Stripe-intent method to stripe once the keys exist", () => {
+    expect(effectivePaymentProvider("card", methods, true)).toBe("stripe");
+  });
+
+  it("falls the card method back to manual with no Stripe configured", () => {
+    expect(effectivePaymentProvider("card", methods, false)).toBe("manual");
+  });
+
+  it("leaves a manual method manual either way", () => {
+    expect(effectivePaymentProvider("zelle", methods, false)).toBe("manual");
+    expect(effectivePaymentProvider("zelle", methods, true)).toBe("manual");
   });
 
   it("falls back to manual for a method the config does not list", () => {
-    expect(paymentProviderFor("venmo", methods)).toBe("manual");
-    expect(paymentProviderFor("card", [])).toBe("manual");
+    expect(effectivePaymentProvider("venmo", methods, true)).toBe("manual");
+    expect(effectivePaymentProvider("card", [], true)).toBe("manual");
   });
 });
 

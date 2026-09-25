@@ -108,6 +108,39 @@ describe.each([true, false])("smokableHemp = %s", (smokableHemp) => {
       }
     });
 
+    it("keeps specs.strengthMg in sync with the default '<n> g' jar", async () => {
+      const { items } = await productService.listProducts({
+        category: HEMP_FLOWER_CATEGORY,
+        pageSize: 100,
+      });
+      expect(items.length).toBe(expected.activeIn(HEMP_FLOWER_CATEGORY).length);
+      let withCopyFigure = 0;
+      for (const product of items) {
+        const defaultVariant = product.variants.find((v) => v.isDefault);
+        const match = defaultVariant?.name.match(/^([\d.]+) g$/);
+        if (!match) continue;
+        const grams = Number(match[1]);
+        const strengthMg = product.specs?.strengthMg ?? Number.NaN;
+        // Whole CBD percent for the default jar, whether or not the copy says it.
+        expect(Number.isInteger((strengthMg * 100) / (grams * 1000))).toBe(
+          true,
+        );
+        const copy = product.description.match(
+          /about (\d+)% CBD, roughly (\d+) mg per ([\d.]+) g/,
+        );
+        if (!copy) continue;
+        withCopyFigure += 1;
+        const cbdPercent = Number(copy[1]);
+        expect(strengthMg, product.slug).toBe(
+          (grams * 1000 * cbdPercent) / 100,
+        );
+        expect(Number(copy[2]), product.slug).toBe(strengthMg);
+        expect(Number(copy[3]), product.slug).toBe(grams);
+      }
+      // Every strain states its CBD figure; only `hemp-flower-jar` does not.
+      expect(withCopyFigure).toBe(Math.max(items.length - 1, 0));
+    });
+
     it("filters by category slug", async () => {
       const result = await productService.listProducts({
         category: "topicals",
@@ -393,7 +426,7 @@ describe.each([true, false])("smokableHemp = %s", (smokableHemp) => {
 
     it("serves the hemp flower strains only while the flag is on", async () => {
       const slugs = expected.activeIn(HEMP_FLOWER_CATEGORY).map((p) => p.slug);
-      expect(slugs.length).toBe(smokableHemp ? 9 : 0);
+      expect(slugs.length).toBe(smokableHemp ? 24 : 0);
       const strains = slugs.filter((slug) => slug !== "hemp-flower-jar");
       const firstImages = new Set<string>();
       for (const slug of strains) {
@@ -406,7 +439,7 @@ describe.each([true, false])("smokableHemp = %s", (smokableHemp) => {
         expect(
           product?.variants.map((v) => v.name),
           slug,
-        ).toEqual(["3.5 g", "7 g", "14 g", "28 g"]);
+        ).toEqual(["3.5 g", "7 g", "14 g", "28 g", "56 g"]);
         expect(product?.specs?.spectrum, slug).toBe("full");
         expect(product?.specs?.servingSize, slug).toBe("as needed");
         firstImages.add(product?.images[0]?.url ?? "");

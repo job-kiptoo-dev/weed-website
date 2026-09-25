@@ -10,7 +10,7 @@ import {
   ValidationError,
   type FieldErrors,
 } from "@/lib/errors";
-import { paymentProviderFor } from "@/lib/payment-methods";
+import { effectivePaymentProvider } from "@/lib/payment-methods";
 import {
   rateLimitKey,
   resolveClientIp,
@@ -172,16 +172,23 @@ export async function placeOrderAction(
       throw new ValidationError(undefined, toFieldErrors(parsed.error));
     }
 
-    // Stripe-backed methods only exist where Stripe is configured, and the
-    // browser is never the authority on that: the `card` radio is filtered
-    // out of the form, and a request that asks for it anyway is refused here,
-    // before anything is written or counted. This is the off switch if Stripe
-    // declines the account — an env change, not a code change.
-    const provider = paymentProviderFor(
+    // What the payment method *does* here is decided by the server's own
+    // configuration, never by the browser: every method is offered, and the
+    // Stripe-backed one degrades to a manual arrangement wherever Stripe is
+    // unconfigured. That is the off switch if Stripe declines the account —
+    // an env change, not a code change.
+    const stripeIsConfigured = stripeConfigured();
+    const provider = effectivePaymentProvider(
       parsed.data.paymentMethod,
       siteConfig.checkout.paymentMethods,
+      stripeIsConfigured,
     );
-    if (provider === "stripe" && !stripeConfigured()) {
+    // Unreachable while `effectivePaymentProvider` derives `stripe` from the
+    // same flag; kept as the last gate in front of `createOrder`, so that a
+    // future path resolving `stripe` some other way (a per-method override, a
+    // Stripe-only express button) still cannot store an order as card-paid
+    // with no Stripe behind it.
+    if (provider === "stripe" && !stripeIsConfigured) {
       const message =
         "Card payments are unavailable right now. Please choose another method.";
       throw new ValidationError(message, { paymentMethod: [message] });
@@ -212,6 +219,9 @@ export async function placeOrderAction(
     const { orderNumber, token } = await orderService.createOrder({
       ...parsed.data,
       userId: session?.user.id ?? null,
+      // Stored on the order: how this payment was actually handled, not how
+      // the config would like to handle it one day.
+      paymentProvider: provider,
     });
 
     return ok({

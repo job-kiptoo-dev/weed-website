@@ -23,6 +23,7 @@ describe("variantLegend", () => {
           { name: "7 g" },
           { name: "14 g" },
           { name: "28 g" },
+          { name: "56 g" },
         ],
         true,
       ),

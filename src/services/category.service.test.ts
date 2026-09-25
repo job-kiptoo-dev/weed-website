@@ -106,7 +106,7 @@ describe.each([true, false])("smokableHemp = %s", (smokableHemp) => {
     if (smokableHemp) {
       expect(preRolls?.productCount).toBe(3);
       expect(preRolls?.sortOrder).toBe(6);
-      expect(flower?.productCount).toBe(9);
+      expect(flower?.productCount).toBe(24);
       expect(flower?.sortOrder).toBe(7);
     } else {
       expect(preRolls).toBeNull();

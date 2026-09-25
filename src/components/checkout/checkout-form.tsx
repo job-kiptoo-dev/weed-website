@@ -22,7 +22,6 @@ import type { FieldErrors } from "@/lib/errors";
 import {
   enabledPaymentMethods,
   PAYMENT_METHOD_IDS,
-  type PaymentMethodConfig,
   type PaymentMethodId,
 } from "@/lib/payment-methods";
 import { siteConfig } from "@/lib/site-config";
@@ -62,7 +61,8 @@ interface CheckoutFormProps {
   /**
    * Stripe's publishable key, read from the server env by the page and passed
    * down rather than baked into the bundle as `NEXT_PUBLIC_*`. Null means this
-   * environment has no Stripe, so no card method is offered at all.
+   * environment has no Stripe: every method is still offered, but "Pay With
+   * Card" is then a manual arrangement rather than a payment taken here.
    */
   stripePublishableKey: string | null;
   /** Server-rendered trust panels, placed at the foot of the summary column. */
@@ -81,19 +81,6 @@ const SHIPPING_FIELDSET_ID = "checkout-shipping-address";
 const PAYMENT_METHODS = enabledPaymentMethods(
   siteConfig.checkout.paymentMethods,
 );
-
-/**
- * A method whose payment Stripe takes is only offered where Stripe is
- * configured; every manual method is always offered. The server applies the
- * same rule in `placeOrderAction`, so this is convenience, not security.
- */
-function availablePaymentMethods(
-  stripePublishableKey: string | null,
-): PaymentMethodConfig[] {
-  return PAYMENT_METHODS.filter(
-    (method) => method.provider !== "stripe" || stripePublishableKey !== null,
-  );
-}
 
 /** What the debounced quote effect sends; serialised so it compares by value. */
 interface QuoteRequest {
@@ -195,7 +182,10 @@ export function CheckoutForm({
   const router = useRouter();
   const { lines: cartLines, clear } = useCart();
 
-  const paymentMethods = availablePaymentMethods(stripePublishableKey);
+  // Every enabled method is offered in every environment; the key only
+  // decides how the card method behaves, and the server decides that again
+  // in `placeOrderAction` — this is copy, not security.
+  const stripeConfigured = stripePublishableKey !== null;
 
   const [billing, setBilling] = useState<CheckoutAddressValues>(() => ({
     ...EMPTY_ADDRESS_VALUES,
@@ -208,7 +198,7 @@ export function CheckoutForm({
   const [notes, setNotes] = useState("");
   const [orderType, setOrderType] = useState<OrderType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>(
-    () => paymentMethods[0]?.id ?? PAYMENT_METHOD_IDS[0],
+    () => PAYMENT_METHODS[0]?.id ?? PAYMENT_METHOD_IDS[0],
   );
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
@@ -484,7 +474,8 @@ export function CheckoutForm({
           />
         </OrderSummary>
         <PaymentMethodRadios
-          methods={paymentMethods}
+          methods={PAYMENT_METHODS}
+          stripeConfigured={stripeConfigured}
           value={paymentMethod}
           disabled={pending}
           error={errors.paymentMethod}

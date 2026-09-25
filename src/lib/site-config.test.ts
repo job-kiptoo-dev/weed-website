@@ -25,8 +25,12 @@ describe("describeStore", () => {
 });
 
 describe("siteConfig contact details", () => {
-  it("uses the placeholder brand domain and handles", () => {
-    expect(siteConfig.contact.email).toBe("hello@botanicssupply.example");
+  it("uses the client's live contact address and the brand handles", () => {
+    // The real inbox and number the client gave us: they render in the footer,
+    // on /contact and inside every payment instruction ({phone}), so a change
+    // here changes the whole site. Placeholders must never come back.
+    expect(siteConfig.contact.email).toBe("Sharekac25@gmail.com");
+    expect(siteConfig.contact.phone).toBe("(850) 328-3550");
     expect(siteConfig.social.map((link) => link.href)).toEqual([
       "https://instagram.com/botanicssupplyco",
       "https://tiktok.com/@botanicssupplyco",

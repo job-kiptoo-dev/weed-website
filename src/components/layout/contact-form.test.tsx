@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { siteConfig } from "@/lib/site-config";
 import { ContactForm } from "./contact-form";
 
 function fill(label: string, value: string) {
@@ -65,7 +66,7 @@ describe("ContactForm", () => {
     submit();
 
     expect(screen.getByRole("status").textContent).toBe(
-      "Sending isn't wired up yet. Email us at hello@botanicssupply.example in the meantime.",
+      `Sending isn't wired up yet. Email us at ${siteConfig.contact.email} in the meantime.`,
     );
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText(/thanks|sent/i)).toBeNull();

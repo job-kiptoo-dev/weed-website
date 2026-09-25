@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import {
+  effectivePaymentProvider,
   resolvePaymentInstructions,
   type PaymentMethodConfig,
   type PaymentMethodId,
@@ -11,6 +12,12 @@ import { siteConfig } from "@/lib/site-config";
 
 interface PaymentMethodRadiosProps {
   methods: readonly PaymentMethodConfig[];
+  /**
+   * Whether Stripe is configured in this environment. It decides only which
+   * instruction copy a method shows: with no Stripe, the card method is one
+   * more arrangement made by a person after the order.
+   */
+  stripeConfigured?: boolean;
   value: PaymentMethodId;
   onChange: (value: PaymentMethodId) => void;
   error?: string;
@@ -19,9 +26,11 @@ interface PaymentMethodRadiosProps {
 }
 
 /**
- * How the customer wants to arrange payment after the order is placed. No
- * payment is taken here and no card, bank or wallet credential is collected:
- * selecting a method only reveals how a person will get in touch.
+ * How the customer wants to pay. Unless Stripe is configured and the method
+ * is the card one, no payment is taken here and no card, bank or wallet
+ * credential is collected: selecting a method only reveals how a person will
+ * get in touch. The instructions follow the method's *effective* provider, so
+ * they always describe what will really happen.
  *
  * Instructions render from `siteConfig` (the phone number lives there, never
  * in this file) and are tied to the selected radio with `aria-describedby`,
@@ -29,6 +38,7 @@ interface PaymentMethodRadiosProps {
  */
 export function PaymentMethodRadios({
   methods,
+  stripeConfigured = false,
   value,
   onChange,
   error,
@@ -97,7 +107,15 @@ export function PaymentMethodRadios({
               </div>
               {selected ? (
                 <p id={instructionsId} className="text-sm text-ink-muted">
-                  {resolvePaymentInstructions(method, siteConfig.contact)}
+                  {resolvePaymentInstructions(
+                    method,
+                    siteConfig.contact,
+                    effectivePaymentProvider(
+                      method.id,
+                      methods,
+                      stripeConfigured,
+                    ),
+                  )}
                 </p>
               ) : null}
             </li>

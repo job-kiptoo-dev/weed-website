@@ -224,23 +224,7 @@ describe("placeOrderAction", () => {
     expect(createOrderMock).not.toHaveBeenCalled();
   });
 
-  it("refuses a card order when Stripe is unconfigured, before any write", async () => {
-    const result = await placeOrderAction(
-      checkoutInput({ paymentMethod: "card" }),
-    );
-
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("VALIDATION");
-    expect(result.error.fieldErrors?.paymentMethod).toEqual([
-      "Card payments are unavailable right now. Please choose another method.",
-    ]);
-    expect(createOrderMock).not.toHaveBeenCalled();
-    expect(consumeMock).not.toHaveBeenCalled();
-  });
-
-  it("accepts a card order when Stripe is configured", async () => {
-    stripeConfiguredMock.mockReturnValue(true);
+  it("takes a card order as a manual arrangement when Stripe is unconfigured", async () => {
     createOrderMock.mockResolvedValue({
       orderId: "ord_1",
       orderNumber: "BSC-100044",
@@ -254,9 +238,14 @@ describe("placeOrderAction", () => {
 
     expect(result.ok).toBe(true);
     expect(createOrderMock).toHaveBeenCalledTimes(1);
+    expect(createOrderMock.mock.calls[0]?.[0]).toMatchObject({
+      paymentMethod: "card",
+      paymentProvider: "manual",
+    });
   });
 
-  it("leaves the manual methods alone whatever Stripe is doing", async () => {
+  it("records a card order as Stripe's once Stripe is configured", async () => {
+    stripeConfiguredMock.mockReturnValue(true);
     createOrderMock.mockResolvedValue({
       orderId: "ord_1",
       orderNumber: "BSC-100045",
@@ -265,11 +254,38 @@ describe("placeOrderAction", () => {
     });
 
     const result = await placeOrderAction(
-      checkoutInput({ paymentMethod: "zelle" }),
+      checkoutInput({ paymentMethod: "card" }),
     );
 
     expect(result.ok).toBe(true);
-    expect(stripeConfiguredMock).not.toHaveBeenCalled();
+    expect(createOrderMock.mock.calls[0]?.[0]).toMatchObject({
+      paymentMethod: "card",
+      paymentProvider: "stripe",
+    });
+  });
+
+  it("leaves the manual methods alone whatever Stripe is doing", async () => {
+    createOrderMock.mockResolvedValue({
+      orderId: "ord_1",
+      orderNumber: "BSC-100046",
+      token: "tok",
+      totals: quote.totals,
+    });
+
+    for (const configured of [false, true]) {
+      createOrderMock.mockClear();
+      stripeConfiguredMock.mockReturnValue(configured);
+
+      const result = await placeOrderAction(
+        checkoutInput({ paymentMethod: "zelle" }),
+      );
+
+      expect(result.ok).toBe(true);
+      expect(createOrderMock.mock.calls[0]?.[0]).toMatchObject({
+        paymentMethod: "zelle",
+        paymentProvider: "manual",
+      });
+    }
   });
 
   it("passes a conflict (a sold-out item) through with its message", async () => {

@@ -28,7 +28,8 @@ export default async function CheckoutPage() {
       <CheckoutForm
         // Read here and passed down, so the key's name stays a server concern
         // and no page that does not need it carries it in its bundle. Null
-        // where Stripe is unconfigured: the card method is then not offered.
+        // where Stripe is unconfigured: the card method is then arranged by a
+        // person, exactly like the other methods.
         stripePublishableKey={getServerEnv().STRIPE_PUBLISHABLE_KEY ?? null}
         customer={
           session

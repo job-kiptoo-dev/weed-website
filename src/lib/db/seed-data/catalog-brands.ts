@@ -3,7 +3,9 @@
  * product has one own photo (`images`) instead of a gallery from the shared
  * photo pools. Photos are brand product shots, allowed here as a deliberate
  * exception to the photo rules; sources are listed in `docs/image-credits.md`.
- * Copy is ours. See `docs/superpowers/specs/2026-09-22-glassware-brand-tinctures-design.md`.
+ * Copy is ours; the spec details in it (sizes, joints, percolators, volumes,
+ * ratios) come from the suppliers' own product data.
+ * See `docs/superpowers/specs/2026-09-22-glassware-brand-tinctures-design.md`.
  */
 import type { ProductSpecs } from "@/types/catalog";
 import type { PoolPhoto, ProductSeed } from "./catalog";
@@ -409,7 +411,7 @@ const glasswareRows: GlasswareRow[] = [
       "The Stündenglass gravity infuser in polished silver: two glass globes on a rotating hub that draws air through water.",
     description: [
       "Two clear glass globes sit on a polished silver hub that rotates on its stand. As the water runs from the top globe to the bottom one, it draws air through a built-in percolator and fills the lower globe for a hands-free pull.",
-      "The side arm holds a metal bowl with a lid on a small tray. It suits hookah and aromatherapy use, and the globes lift off for cleaning.",
+      "The side arm holds a metal bowl with a lid on a small tray. It is made for mixology, culinary, hookah and aromatherapy use, and the globes lift off for cleaning.",
     ],
   },
 ];
@@ -465,7 +467,7 @@ const brandTinctureRows: BrandTinctureRow[] = [
     shortDescription:
       "A 30 mL CBDfx oil with 500 mg CBD and 250 mg CBG, blended with curcumin and coenzyme Q10.",
     description: [
-      "Full-spectrum hemp extract with 500 mg of CBD and 250 mg of CBG per bottle, a 2:1 ratio. CBDfx adds curcumin, coenzyme Q10 and a terpene blend.",
+      "Full-spectrum hemp extract with 500 mg of CBD and 250 mg of CBG per bottle, a 2:1 ratio. CBDfx adds curcumin, coenzyme Q10 and its own proprietary terpene blend.",
       "It comes in a 30 mL amber glass bottle with a dropper, packed in a printed box.",
     ],
   },
@@ -497,7 +499,7 @@ const brandTinctureRows: BrandTinctureRow[] = [
     shortDescription:
       "A 30 mL Koi Naturals oil with 1000 mg full-spectrum CBD and an orange flavor.",
     description: [
-      "A full-spectrum hemp extract in a carrier oil with orange flavor, made by Koi. Each 30 mL bottle holds 1000 mg of CBD.",
+      "A full-spectrum hemp extract in a carrier oil with orange flavor, made by Koi with its proprietary PRIZM blend. Each 30 mL bottle holds 1000 mg of CBD.",
       "It comes in a brown glass bottle with a dropper, packed in a printed box with the Koi fish logo.",
     ],
   },
@@ -533,7 +535,7 @@ const brandTinctureRows: BrandTinctureRow[] = [
     shortDescription:
       "A 30 mL bottle of Myriam's Hope Daily 50 with 1500 mg full-spectrum CBD in olive oil.",
     description: [
-      "Myriam's Hope blends a full-spectrum hemp extract into olive oil. Each 30 mL bottle holds 1500 mg of CBD, or 50 mg per mL.",
+      "Myriam's Hope blends a full-spectrum hemp extract into olive oil, using only organic and natural ingredients, and the finished oil is sugar free. Each 30 mL bottle holds 1500 mg of CBD, or 50 mg per mL.",
       "The amber glass bottle has a white dropper cap and comes in a teal and white box.",
     ],
   },
@@ -549,7 +551,7 @@ const brandTinctureRows: BrandTinctureRow[] = [
     shortDescription:
       "A 50 mL NuLeaf Naturals full-spectrum oil with 3000 mg CBD and just two ingredients.",
     description: [
-      "Two ingredients: full-spectrum hemp extract and a carrier oil, with no added flavor. Each 50 mL bottle holds 3000 mg of CBD.",
+      "Two ingredients: organic full-spectrum hemp extract and a carrier oil, with no added flavor, additives or preservatives. NuLeaf grows its hemp without herbicides, pesticides or chemical fertilizers. Each 50 mL bottle holds 3000 mg of CBD.",
       "It comes in a dark glass bottle with a dropper cap, packed in a white box.",
     ],
   },
@@ -565,7 +567,7 @@ const brandTinctureRows: BrandTinctureRow[] = [
     shortDescription:
       "A 60 mL Pure Spectrum broad-spectrum oil with 2500 mg CBD in MCT oil, natural flavor.",
     description: [
-      "Broad-spectrum hemp extract in MCT oil with the plant's own terpenes and no added flavor. Each 60 mL bottle holds 2500 mg of CBD.",
+      "Broad-spectrum hemp extract in organic MCT oil with the plant's own terpenes and no added flavor. Each 60 mL bottle holds 2500 mg of CBD across sixty 1 mL servings, about 42 mg of CBD per serving.",
       "It comes in a blue glass bottle with a dropper cap, packed in a navy box.",
     ],
   },

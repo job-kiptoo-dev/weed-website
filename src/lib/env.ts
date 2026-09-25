@@ -4,10 +4,12 @@ import { z } from "zod";
 const optionalString = z.string().min(1).optional();
 
 /**
- * Stripe keys are optional everywhere: with none of them set the shop simply
- * does not offer card payments (`stripeConfigured` is false, the `card` radio
- * is filtered out and the server rejects it), which is also the off switch if
- * Stripe ever declines or terminates the account.
+ * Stripe keys are optional everywhere: with none of them set `stripeConfigured`
+ * is false and "Pay With Card" falls back to the manual arrangement the other
+ * methods use — the radio still shows, the copy says a person will be in touch,
+ * and the order is stored with `paymentProvider: "manual"`. Removing the keys is
+ * therefore the off switch if Stripe ever declines or terminates the account.
+ * `effectivePaymentProvider` in `@/lib/payment-methods` is the single decider.
  */
 const STRIPE_VARIABLES = [
   "STRIPE_SECRET_KEY",

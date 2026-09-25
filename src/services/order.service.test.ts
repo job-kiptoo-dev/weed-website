@@ -142,6 +142,8 @@ function checkoutInput(
     notes: null,
     orderType: "delivery",
     paymentMethod: "zelle",
+    // Resolved by the caller (`placeOrderAction`), stored here as given.
+    paymentProvider: "manual",
     marketingOptIn: false,
     discountCode: null,
     lines: TWO_LINES,
@@ -546,6 +548,7 @@ describe("createOrder", () => {
     expect(order.shippingAddress).toEqual(expectedAddress(SHIPPING));
     expect(order.checkoutMeta).toEqual({
       paymentMethod: "zelle",
+      paymentProvider: "manual",
       orderType: "delivery",
       exciseTaxCents: 0,
       salesTaxCents: 0,
@@ -584,6 +587,16 @@ describe("createOrder", () => {
       itemCount: 2,
       placedAt: expect.any(Date),
     });
+  });
+
+  it("stores the payment provider the caller resolved, not the config's intent", async () => {
+    const result = await orderServiceFor().createOrder(
+      checkoutInput({ paymentMethod: "card", paymentProvider: "stripe" }),
+    );
+    const order = await storedOrder(result.orderNumber);
+
+    expect(order.checkoutMeta?.paymentMethod).toBe("card");
+    expect(order.checkoutMeta?.paymentProvider).toBe("stripe");
   });
 
   it("uses the billing address as the shipping snapshot for pickup", async () => {

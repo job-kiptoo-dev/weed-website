@@ -274,29 +274,69 @@ describe("CheckoutForm", () => {
     );
   });
 
-  it("offers no card method when Stripe is unconfigured", async () => {
+  it("offers all eight methods, card included, with no Stripe configured", async () => {
     render(<CheckoutForm customer={null} stripePublishableKey={null} />);
     await waitForQuote();
 
-    expect(screen.queryByLabelText("Pay With Card")).toBeNull();
-    // The seven manual methods are untouched, and the default is still Zelle.
     const group = screen.getByRole("group", { name: "Payment method" });
-    expect(within(group).getAllByRole("radio")).toHaveLength(7);
+    expect(within(group).getAllByRole("radio")).toHaveLength(8);
+    expect(screen.getByLabelText("Pay With Card")).toBeTruthy();
+    // The default is still Zelle, the first configured method.
     expect((screen.getByLabelText("Zelle") as HTMLInputElement).checked).toBe(
       true,
     );
   });
 
-  it("offers the card method once Stripe is configured", async () => {
+  it("describes the card method as a manual arrangement with no Stripe", async () => {
+    render(<CheckoutForm customer={null} stripePublishableKey={null} />);
+    await waitForQuote();
+
+    fireEvent.click(screen.getByLabelText("Pay With Card"));
+
+    const instructions = document.getElementById(
+      "checkout-payment-card-instructions",
+    )?.textContent;
+    expect(instructions).toContain("No card details are ever entered");
+    expect(instructions).not.toContain("Enter your card details on this page");
+  });
+
+  it("describes the card method as paid on the page once Stripe is configured", async () => {
     render(
       <CheckoutForm customer={null} stripePublishableKey="pk_test_0000" />,
     );
     await waitForQuote();
 
-    const card = screen.getByLabelText("Pay With Card") as HTMLInputElement;
-    expect(card.checked).toBe(false);
-    expect((screen.getByLabelText("Zelle") as HTMLInputElement).checked).toBe(
-      true,
+    const group = screen.getByRole("group", { name: "Payment method" });
+    expect(within(group).getAllByRole("radio")).toHaveLength(8);
+
+    fireEvent.click(screen.getByLabelText("Pay With Card"));
+
+    const instructions = document.getElementById(
+      "checkout-payment-card-instructions",
+    )?.textContent;
+    expect(instructions).toContain("Enter your card details on this page");
+    expect(instructions).not.toContain("No card details are ever entered");
+  });
+
+  it("submits a card order like any other method", async () => {
+    mocks.placeOrderAction.mockResolvedValue({
+      ok: true,
+      data: {
+        orderNumber: "BSC-100042",
+        confirmationPath: "/checkout/confirmation/BSC-100042?t=token",
+      },
+    });
+    render(<CheckoutForm customer={null} stripePublishableKey={null} />);
+    await waitForQuote();
+
+    fillRequiredFields();
+    fireEvent.click(screen.getByLabelText("Pay With Card"));
+    fireEvent.click(placeOrderButton());
+
+    await waitFor(() =>
+      expect(mocks.placeOrderAction).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentMethod: "card" }),
+      ),
     );
   });
 

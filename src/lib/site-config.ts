@@ -193,8 +193,8 @@ export const siteConfig = {
     ] satisfies CheckoutSecurityBadge[],
   },
   contact: {
-    email: "hello@botanicssupply.example",
-    phone: "(555) 010-4242",
+    email: "Sharekac25@gmail.com",
+    phone: "(850) 328-3550",
     address: ["120 Meadow Lane", "Portland, OR 97201"],
   },
   legal: {

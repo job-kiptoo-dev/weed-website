@@ -236,7 +236,7 @@ const categorySeeds: CategorySeed[] = [
     slug: HEMP_FLOWER_CATEGORY,
     name: "Hemp flower",
     description:
-      "Whole CBD hemp flower by the strain, hand trimmed and slow cured, in 3.5 g to 28 g jars. Lab tested every batch. Not available in every state.",
+      "Whole CBD hemp flower by the strain, hand trimmed and slow cured, in 3.5 g to 56 g jars. Lab tested every batch. Not available in every state.",
   },
   {
     slug: "glassware",

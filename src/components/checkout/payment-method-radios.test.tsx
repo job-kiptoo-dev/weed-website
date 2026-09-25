@@ -92,6 +92,40 @@ describe("PaymentMethodRadios", () => {
     ).toContain("No card details are ever entered on this site");
   });
 
+  it("shows the Stripe card copy once Stripe is configured", () => {
+    render(
+      <PaymentMethodRadios
+        methods={METHODS}
+        stripeConfigured
+        value="card"
+        onChange={vi.fn()}
+      />,
+    );
+
+    const instructions = document.getElementById(
+      "checkout-payment-card-instructions",
+    )?.textContent;
+    expect(instructions).toContain("Enter your card details on this page");
+    expect(instructions).toContain(siteConfig.contact.phone);
+    expect(instructions).not.toContain("No card details are ever entered");
+  });
+
+  it("keeps a manual method's copy when Stripe is configured", () => {
+    render(
+      <PaymentMethodRadios
+        methods={METHODS}
+        stripeConfigured
+        value="zelle"
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(
+      document.getElementById("checkout-payment-zelle-instructions")
+        ?.textContent,
+    ).toContain("A person will send you the Zelle name and number");
+  });
+
   it("renders a method's logo as a decorative image", () => {
     render(
       <PaymentMethodRadios

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { siteConfig } from "@/lib/site-config";
 import { ForgotPasswordForm } from "./forgot-password-form";
 
 const mocks = vi.hoisted(() => ({ requestPasswordReset: vi.fn() }));
@@ -10,8 +11,9 @@ vi.mock("@/lib/auth/client", () => ({
 
 const SUCCESS =
   "If an account exists for that email, we've sent a reset link. It expires in 1 hour.";
-const DEMO_NOTICE =
-  "Heads up: while the store is in demo mode, reset emails can only be delivered to the store owner's inbox. If nothing arrives in a few minutes, email hello@botanicssupply.example and we'll help you get back in.";
+// The address comes from the config so updating the client's inbox doesn't
+// break this test; the sentence around it is what's pinned here.
+const DEMO_NOTICE = `Heads up: while the store is in demo mode, reset emails can only be delivered to the store owner's inbox. If nothing arrives in a few minutes, email ${siteConfig.contact.email} and we'll help you get back in.`;
 const DEV_NOTICE = "Dev: the reset link is printed in the server log.";
 
 function requestFor(email: string) {

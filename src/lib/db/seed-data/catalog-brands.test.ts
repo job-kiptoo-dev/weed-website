@@ -111,8 +111,15 @@ describe("brand seeds", () => {
       expect(seed.name.toLowerCase(), seed.slug).not.toMatch(
         /pre-roll|accessories/,
       );
+      // One sentence: the only full stop is the final one, decimals aside.
       expect(seed.shortDescription, seed.slug).toMatch(/^[^.]+(\.\d[^.]*)*\.$/);
+      // The product schema allows 300; the longest line here is well under 120.
+      expect(seed.shortDescription.length, seed.slug).toBeLessThanOrEqual(120);
       expect(seed.description, seed.slug).toHaveLength(2);
+      for (const paragraph of seed.description) {
+        expect(paragraph.trim(), seed.slug).not.toBe("");
+        expect(paragraph.trim(), seed.slug).toBe(paragraph);
+      }
     }
   });
 

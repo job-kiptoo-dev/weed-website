@@ -43,6 +43,7 @@ import {
   enabledPaymentMethods,
   type PaymentMethodConfig,
   type PaymentMethodId,
+  type PaymentProvider,
 } from "@/lib/payment-methods";
 import { siteConfig } from "@/lib/site-config";
 import {
@@ -82,6 +83,12 @@ export interface PriceOrderOptions {
 export interface CreateOrderInput extends CheckoutInput {
   /** From the caller's session only; never from the browser. */
   userId: string | null;
+  /**
+   * How the payment is actually handled for this order, resolved by the
+   * caller with `effectivePaymentProvider` — it, not this service, knows
+   * whether Stripe is configured. Stored on the order as-is.
+   */
+  paymentProvider: PaymentProvider;
 }
 
 export interface CreateOrderResult {
@@ -605,6 +612,7 @@ export function createOrderService({
       const orderId = newId("ord");
       const checkoutMeta: CheckoutMeta = {
         paymentMethod: input.paymentMethod,
+        paymentProvider: input.paymentProvider,
         orderType: input.orderType,
         exciseTaxCents: totals.exciseTaxCents,
         salesTaxCents: totals.salesTaxCents,
